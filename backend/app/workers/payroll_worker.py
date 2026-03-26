@@ -62,6 +62,15 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
 
     sessions = sessions_result.data or []
 
+    # Fetch holidays in the payroll period from calendar_days
+    holidays_result = db.table("calendar_days") \
+        .select("date, description") \
+        .eq("day_type", "HOLIDAY") \
+        .gte("date", period_start.isoformat()) \
+        .lte("date", period_end.isoformat()) \
+        .execute()
+    holiday_dates = {h["date"]: h.get("description", "Holiday") for h in (holidays_result.data or [])}
+
     # Group sessions by date for daily calculation
     daily_data = {}
     for session in sessions:
@@ -80,6 +89,8 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
     days_absent = 0
     working_days_count = 0
     daily_breakdown = []
+    holidays_count = 0
+    holidays_worked = 0
     warnings = []
 
     # Process each day in the period
@@ -88,22 +99,28 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
         current_str = current.isoformat()
         day_sessions = daily_data.get(current_str, [])
         is_sunday = current.weekday() == 6  # Sunday = 6
-        is_working = not is_sunday  # Mon-Sat are working days
+        is_holiday = current_str in holiday_dates  # From calendar_days table
+        is_paid_off = is_sunday or is_holiday  # Both are paid days off
+        is_working = not is_paid_off  # Working day = not Sunday and not holiday
 
         if is_working:
             working_days_count += 1
+        if is_holiday:
+            holidays_count += 1
 
         day_details = {
             "date": current_str,
             "is_working_day": is_working,
             "is_sunday": is_sunday,
+            "is_holiday": is_holiday,
+            "holiday_name": holiday_dates.get(current_str),
             "sessions": [],
             "was_overridden": False,
             "auto_checkout_uncorrected": False,
         }
 
-        if is_sunday:
-            # ─── SUNDAY: PAID DAY OFF ───
+        if is_paid_off:
+            # ─── PAID DAY OFF (Sunday or Holiday) ───
             # Employee always gets per_day_salary for Sundays.
             # If they also worked, those hours are OVERTIME (extra).
             day_salary = per_day_salary  # paid off regardless
@@ -137,7 +154,10 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
 
                 day_details["total_hours"] = float(day_hours)
                 day_details["overtime_hours"] = float(day_hours)
-                day_details["sunday_overtime"] = True
+                day_details["sunday_overtime"] = is_sunday
+                day_details["holiday_overtime"] = is_holiday
+                if is_holiday:
+                    holidays_worked += 1
                 day_details["day_salary"] = float(day_salary)
                 day_details["overtime_pay"] = float(sunday_ot_pay)
                 day_details["total_day_pay"] = float(day_salary + sunday_ot_pay)
@@ -237,6 +257,12 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
         "pt_deduction": float(PT_DEDUCTION),
         "total_day_salary": float(total_day_salary.quantize(Decimal("0.01"))),
         "total_overtime_pay": float(total_overtime_pay.quantize(Decimal("0.01"))),
+        "holidays_in_period": holidays_count,
+        "holidays_worked": holidays_worked,
+        "holiday_list": [{
+            "date": d,
+            "description": desc
+        } for d, desc in holiday_dates.items()],
     }
 
     payroll_data = {

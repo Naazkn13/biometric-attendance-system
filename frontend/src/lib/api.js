@@ -113,6 +113,18 @@ export const generatePayslips = (periodStart, periodEnd) =>
 export const getPayslip = (employeeId, periodStart, periodEnd) =>
   request(`/api/payslip/${employeeId}?period_start=${periodStart}&period_end=${periodEnd}`);
 
+// ── Holidays ──
+export const getHolidays = (year) =>
+  request(`/api/holidays${year ? `?year=${year}` : ''}`);
+export const createHoliday = (data) =>
+  request('/api/holidays', { method: 'POST', body: JSON.stringify(data) });
+export const updateHoliday = (dateStr, data) =>
+  request(`/api/holidays/${dateStr}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteHoliday = (dateStr) =>
+  request(`/api/holidays/${dateStr}`, { method: 'DELETE' });
+export const bulkCreateHolidays = (data) =>
+  request('/api/holidays/bulk', { method: 'POST', body: JSON.stringify(data) });
+
 // ── System Config ──
 export const getSystemConfig = () => request('/api/system-config');
 

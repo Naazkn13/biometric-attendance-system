@@ -126,8 +126,22 @@ async def _process_punch(db, punch: dict) -> Optional[tuple]:
     location_id = _get_device_location(db, device_sn)
 
     if open_result.data:
-        # This punch is PUNCH OUT → close the open session
+        # This punch could be PUNCH OUT → check minimum gap first
         session = open_result.data[0]
+        punch_in_time = datetime.fromisoformat(session["punch_in_time"].replace("Z", "+00:00"))
+        gap_minutes = (punch_time - punch_in_time).total_seconds() / 60
+
+        if gap_minutes < 2:
+            # Too close to punch-in → duplicate tap, ignore this punch
+            logger.info(
+                f"Duplicate punch ignored: employee {employee_id}, "
+                f"gap={gap_minutes:.1f}min (< 2min minimum). Punch {punch['id']}"
+            )
+            # Mark as processed so it doesn't get picked up again
+            db.table("raw_punches").update({"is_processed": True}).eq("id", punch["id"]).execute()
+            return (employee_id, session_date_str)
+
+        # Gap is valid → close the session
         await _close_session(db, session, punch, punch_time, location_id, shift)
     else:
         # Check for AUTO_CHECKOUT session (reopen logic §7)
@@ -145,6 +159,32 @@ async def _process_punch(db, punch: dict) -> Optional[tuple]:
             session = auto_result.data[0]
             await _reopen_session(db, session, punch, punch_time, location_id, shift)
         else:
+            # Check for COMPLETE session to avoid creating duplicate sessions
+            # when someone punches multiple times
+            complete_result = db.table("attendance_sessions") \
+                .select("*") \
+                .eq("employee_id", employee_id) \
+                .eq("session_date", session_date_str) \
+                .eq("status", "COMPLETE") \
+                .order("punch_out_time", desc=True) \
+                .limit(1) \
+                .execute()
+
+            if complete_result.data:
+                last_complete = complete_result.data[0]
+                last_out_str = last_complete.get("punch_out_time", "")
+                if last_out_str:
+                    last_out_time = datetime.fromisoformat(last_out_str.replace("Z", "+00:00"))
+                    gap_since_last_out = (punch_time - last_out_time).total_seconds() / 60
+                    if gap_since_last_out < 2:
+                        # Too close to last punch-out → duplicate tap
+                        logger.info(
+                            f"Duplicate punch ignored (post-checkout): employee {employee_id}, "
+                            f"gap={gap_since_last_out:.1f}min since last punch-out. Punch {punch['id']}"
+                        )
+                        db.table("raw_punches").update({"is_processed": True}).eq("id", punch["id"]).execute()
+                        return (employee_id, session_date_str)
+
             # This punch is PUNCH IN → create new session
             await _create_session(db, employee_id, punch, punch_time, session_date_str, location_id, shift)
 

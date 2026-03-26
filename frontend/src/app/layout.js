@@ -9,6 +9,7 @@ const navItems = [
   { label: 'Attendance', href: '/attendance', icon: '🕐', section: 'Dashboard' },
   { label: 'Employees', href: '/employees', icon: '👥', section: 'Management' },
   { label: 'Shift Master', href: '/shifts', icon: '🕐', section: 'Management' },
+  { label: 'Holiday Master', href: '/holidays', icon: '🎉', section: 'Management' },
   { label: 'Corrections', href: '/corrections', icon: '✏️', section: 'Management' },
   { label: 'Payroll', href: '/payroll', icon: '💰', section: 'Finance' },
   { label: 'Payslips', href: '/payslips', icon: '🧾', section: 'Finance' },
