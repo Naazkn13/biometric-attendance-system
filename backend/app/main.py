@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_settings
-from app.routers import employees, attendance, overrides, payroll, devices, payslip, sync, holidays
+from app.routers import employees, attendance, overrides, payroll, devices, payslip, sync, holidays, adms
 
 # Configure logging
 logging.basicConfig(
@@ -96,7 +96,7 @@ app.add_middleware(
 )
 
 # Mount routers
-# ADMS router removed — device is not using push protocol
+app.include_router(adms.router)  # ADMS push protocol — mounted at root (device expects /iclock/cdata)
 app.include_router(employees.router, prefix="/api")
 app.include_router(attendance.router, prefix="/api")
 app.include_router(overrides.router, prefix="/api")
@@ -136,6 +136,7 @@ async def health_check():
         "workers": {
             "session_builder": "active (30s interval)",
             "auto_checkout": "active (15m interval)",
+            "device_poller": f"active ({get_settings().device_poll_interval_seconds}s interval)",
         },
     }
 
