@@ -1,26 +1,25 @@
 """
 Andheri ADMS Relay
 ==================
-Runs a tiny HTTP server on port 80.
-The ZKTeco device pushes to THIS PC's local IP.
-This script forwards all punches to Railway.
+Transparent HTTP proxy. ZKTeco device pushes to THIS PC (LAN).
+This relay forwards every request to Railway and returns the response.
+
+Device → Relay (port 8080) → Railway → response back to device
 
 Usage:
-    python andheri_relay.py
+    python andheri_relay.py   (must be run as Administrator)
 """
 
 import logging
 import os
 import requests
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-from datetime import datetime
+from urllib.parse import urlparse
 
 # ======== CONFIGURATION ========
-RELAY_PORT = 8080
+RELAY_PORT  = 8080
 RAILWAY_URL = "https://attendance-production-38c4.up.railway.app"
-DEVICE_SN   = "170371318"   # Andheri device SN (auto-registered)
-# ===============================
+# ================================
 
 LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "andheri_relay.log")
 logging.basicConfig(
@@ -28,90 +27,49 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
         logging.FileHandler(LOG_FILE, encoding="utf-8"),
-        logging.StreamHandler(),   # also print to console during testing
+        logging.StreamHandler(),
     ]
 )
 logger = logging.getLogger(__name__)
 
 
-def forward_punches_to_railway(body_text: str, sn: str):
-    """Send ATTLOG data to Railway via the sync/upload-dat endpoint."""
-    try:
-        files = {"file": ("sync.dat", body_text, "text/plain")}
-        data  = {"device_sn": sn}
-        resp  = requests.post(
-            "{}/api/sync/upload-dat".format(RAILWAY_URL),
-            files=files,
-            data=data,
-            timeout=15,
-        )
-        if resp.status_code == 200:
-            result = resp.json()
-            logger.info("Forwarded to Railway — {} new, {} errors".format(result['inserted'], result['errors']))
-        else:
-            logger.error("Railway error {}: {}".format(resp.status_code, resp.text))
-    except Exception as e:
-        logger.error("Failed to forward to Railway: {}".format(e))
-
-
-class ADMSHandler(BaseHTTPRequestHandler):
+class ProxyHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
-        logger.debug("HTTP: " + (format % args))
+        pass  # use our own logger
 
-    def _sn(self):
-        qs = parse_qs(urlparse(self.path).query)
-        return qs.get("SN", [DEVICE_SN])[0]
+    def _proxy(self, method):
+        path = self.path  # e.g. /iclock/cdata?SN=xxx&table=ATTLOG
+        url  = "{}{}".format(RAILWAY_URL, path)
 
-    # ── GET /iclock/cdata  (handshake / heartbeat) ─────────────────
-    def do_GET(self):
-        sn = self._sn()
-        path = urlparse(self.path).path
+        # Read request body for POST
+        length = int(self.headers.get("Content-Length", 0))
+        body   = self.rfile.read(length) if length else None
 
-        logger.info("GET path={} SN={}".format(path, sn))
-        if path == "/iclock/cdata":
-            logger.info("Heartbeat from device SN={}".format(sn))
-            # Tell device to push its attendance log
-            response = (
-                "GET ATTLOG Stamp=0\r\n"
-                "GET OPERLOG Stamp=0\r\n"
-                "OK\r\n"
+        logger.info("{} {} body_len={}".format(method, path, length))
+
+        try:
+            resp = requests.request(
+                method  = method,
+                url     = url,
+                data    = body,
+                headers = {"Content-Type": self.headers.get("Content-Type", "text/plain")},
+                timeout = 15,
             )
-            self._respond(200, response)
+            logger.info("Railway replied {} — {}".format(resp.status_code, repr(resp.text[:120])))
+            self._respond(resp.status_code, resp.text)
 
-        elif path == "/iclock/getrequest":
-            logger.info("Device polling for commands SN={}".format(sn))
-            # Command device to upload attendance log
-            response = "C:DATA QUERY ATTLOG StartTime=2000-01-01 00:00:00\r\nOK\r\n"
-            self._respond(200, response)
-
-        else:
-            logger.info("GET unknown path={} SN={}".format(path, sn))
+        except Exception as e:
+            logger.error("Proxy error: {}".format(e))
             self._respond(200, "OK\r\n")
 
-    # ── POST /iclock/cdata  (attendance data) ──────────────────────
+    def do_GET(self):
+        self._proxy("GET")
+
     def do_POST(self):
-        sn    = self._sn()
-        path  = urlparse(self.path).path
-        qs    = parse_qs(urlparse(self.path).query)
-        table = qs.get("table", [""])[0].upper()
+        self._proxy("POST")
 
-        length   = int(self.headers.get("Content-Length", 0))
-        raw_body = self.rfile.read(length) if length else b""
-        body     = raw_body.decode("utf-8", errors="replace").strip()
-
-        logger.info("POST path={} table={} SN={} body_len={}".format(path, table, sn, len(body)))
-
-        if path == "/iclock/cdata" and table == "ATTLOG" and body:
-            lines = [l for l in body.split("\n") if l.strip()]
-            logger.info("Received {} punch lines from SN={}".format(len(lines), sn))
-            forward_punches_to_railway(body, sn)
-        elif body:
-            logger.info("POST body preview: {}".format(body[:200]))
-
-        self._respond(200, "OK\r\n")
-
-    def _respond(self, code: int, text: str):
+    def _respond(self, code, text):
         encoded = text.encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "text/plain")
@@ -121,14 +79,13 @@ class ADMSHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    logger.info("Andheri ADMS Relay starting on port {}".format(RELAY_PORT))
-    logger.info("Forwarding to Railway: {}".format(RAILWAY_URL))
-    logger.info("Waiting for device SN={}...".format(DEVICE_SN))
+    logger.info("Andheri ADMS Relay (proxy mode) starting on port {}".format(RELAY_PORT))
+    logger.info("Forwarding all requests to: {}".format(RAILWAY_URL))
 
     try:
-        server = HTTPServer(("0.0.0.0", RELAY_PORT), ADMSHandler)
+        server = HTTPServer(("0.0.0.0", RELAY_PORT), ProxyHandler)
         server.serve_forever()
     except PermissionError:
-        logger.error("Port 80 requires admin. Run as Administrator, or change RELAY_PORT to 8080.")
+        logger.error("Port 8080 requires admin. Run as Administrator.")
     except OSError as e:
-        logger.error("Could not start server: {}".format(e))
+        logger.error("Could not start: {}".format(e))
