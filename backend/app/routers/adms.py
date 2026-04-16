@@ -62,11 +62,11 @@ async def adms_handshake(
         }).execute()
         logger.warning(f"Auto-registered unknown device: {SN}")
 
-    # Tell the device to push ATTLOG data
-    # Stamp=0 forces device to send ALL records regardless of internal tracking
+    # Tell the device to push ATTLOG data from system go-live date only
+    # Avoids pulling years of historical data from old devices
     commands = (
-        "GET ATTLOG Stamp=0\r\n"
-        "GET OPERLOG Stamp=0\r\n"
+        "GET ATTLOG From=2026-03-01 00:00:00\r\n"
+        "GET OPERLOG From=2026-03-01 00:00:00\r\n"
         "OK\r\n"
     )
 
