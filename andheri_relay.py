@@ -54,7 +54,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 url     = url,
                 data    = body,
                 headers = {"Content-Type": self.headers.get("Content-Type", "text/plain")},
-                timeout = 15,
+                timeout = 60,
             )
             logger.info("Railway replied {} — {}".format(resp.status_code, repr(resp.text[:120])))
             self._respond(resp.status_code, resp.text)
