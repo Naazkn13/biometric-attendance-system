@@ -73,16 +73,20 @@ class ADMSHandler(BaseHTTPRequestHandler):
             logger.info("Heartbeat from device SN={}".format(sn))
             # Tell device to push its attendance log
             response = (
-                "GET ATTLOG From=2000-01-01 00:00:00\r\n"
-                "GET OPERLOG From=2000-01-01 00:00:00\r\n"
+                "GET ATTLOG Stamp=0\r\n"
+                "GET OPERLOG Stamp=0\r\n"
                 "OK\r\n"
             )
             self._respond(200, response)
 
         elif path == "/iclock/getrequest":
-            self._respond(200, "OK\r\n")
+            logger.info("Device polling for commands SN={}".format(sn))
+            # Command device to upload attendance log
+            response = "C:DATA QUERY ATTLOG StartTime=2000-01-01 00:00:00\r\nOK\r\n"
+            self._respond(200, response)
 
         else:
+            logger.info("GET unknown path={} SN={}".format(path, sn))
             self._respond(200, "OK\r\n")
 
     # ── POST /iclock/cdata  (attendance data) ──────────────────────
