@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generatePayslips } from '@/lib/api';
 
 export default function PayslipsPage() {
@@ -30,6 +30,10 @@ export default function PayslipsPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        handleGenerate();
+    }, [month, year]);
 
     const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
@@ -185,7 +189,7 @@ export default function PayslipsPage() {
                                                     style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                                                     onClick={() => handlePrint(p)}
                                                 >
-                                                    🖨️ Print
+                                                    🖨️ Print / Save as PDF
                                                 </button>
                                             </div>
                                         </td>
@@ -233,6 +237,8 @@ export default function PayslipsPage() {
           body { background: #fff !important; }
           .app-layout { display: block !important; }
           .main-content { padding: 0 !important; margin: 0 !important; }
+          details summary { display: none !important; }
+          details > div { max-height: none !important; overflow: visible !important; display: block !important; }
         }
       `}</style>
         </div>
@@ -244,7 +250,7 @@ function PayslipDetail({ payslip, month, year, formatCurrency }) {
     const breakdown = p.daily_breakdown || [];
 
     return (
-        <div className="table-container" style={{ padding: '2rem' }}>
+        <div style={{ padding: '2rem', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
             {/* Header */}
             <div style={{
                 textAlign: 'center',
@@ -372,7 +378,7 @@ function PayslipDetail({ payslip, month, year, formatCurrency }) {
                     }}>
                         📅 Daily Breakdown ({breakdown.length} days)
                     </summary>
-                    <div style={{ maxHeight: '400px', overflowY: 'auto', marginTop: '0.5rem' }}>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', marginTop: '0.5rem' }} className="print-expand">
                         <table>
                             <thead>
                                 <tr>
