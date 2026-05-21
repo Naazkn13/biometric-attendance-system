@@ -60,6 +60,10 @@ export default function EmployeeAttendancePage() {
 
     const daysInMonth = new Date(year, month, 0).getDate();
     const perDaySalary = profile?.basic_salary ? (profile.basic_salary / daysInMonth).toFixed(2) : '0.00';
+    
+    // Calculate Estimated Pay
+    const presentDays = attendance.filter(s => s.status !== 'ABSENT').length;
+    const baseEstimatedPay = (presentDays * parseFloat(perDaySalary)).toFixed(2);
 
     return (
         <div>
@@ -87,6 +91,34 @@ export default function EmployeeAttendancePage() {
                 background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
                 color: '#ef4444', padding: '12px 16px', borderRadius: '10px', fontSize: '14px', marginBottom: '16px'
             }}>❌ {error}</div>}
+
+            {!loading && profile?.basic_salary && (
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ ...cardStyle, background: '#f8fafc', padding: '20px', borderLeft: '4px solid #3b82f6' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <div>
+                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Base Estimated Pay</div>
+                                <div style={{ fontSize: '28px', fontWeight: 800, color: '#1e293b', marginTop: '4px' }}>
+                                    ₹{baseEstimatedPay}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '14px', color: '#475569' }}><strong style={{ color: '#1e293b' }}>{presentDays}</strong> / {daysInMonth} Days Present</div>
+                            </div>
+                        </div>
+                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', color: '#92400e', display: 'flex', gap: '12px' }}>
+                            <div style={{ fontSize: '16px' }}>ℹ️</div>
+                            <div>
+                                <strong>Disclaimer: This is a base estimate only.</strong> Your final payslip may differ. 
+                                <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', color: '#b45309' }}>
+                                    <li><strong>Additions not included:</strong> Overtime pay, Paid leaves, Conveyance allowance.</li>
+                                    <li><strong>Deductions not included:</strong> Short hours deduction, Professional Tax (PT), LOP adjustments.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div style={cardStyle}>
                 {loading ? (

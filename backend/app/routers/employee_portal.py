@@ -29,7 +29,7 @@ async def get_my_payslips(
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
     
-    query = supabase.table("payroll_records").select("*").eq("employee_id", employee_id).eq("status", "FINAL")
+    query = supabase.table("payroll_records").select("*, employees(name, device_user_id)").eq("employee_id", employee_id).eq("status", "FINAL")
     
     # Optional filtering
     if year and month:
@@ -55,7 +55,7 @@ async def get_my_payslip_detail(
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
     
-    response = supabase.table("payroll_records").select("*").eq("employee_id", employee_id).eq("period_start", period_start).eq("status", "FINAL").execute()
+    response = supabase.table("payroll_records").select("*, employees(name, device_user_id)").eq("employee_id", employee_id).eq("period_start", period_start).eq("status", "FINAL").execute()
     
     if not response.data:
         raise HTTPException(status_code=404, detail="Payslip not found or not yet finalized")

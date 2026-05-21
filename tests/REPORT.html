@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AttendPay — Test Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #1e293b; padding: 32px 20px; }
+  h1.main-title { font-size: 28px; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #64748b; margin-bottom: 24px; font-size: 15px; }
+  .summary { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .sum-box { background: #fff; border-radius: 12px; padding: 20px 32px; text-align: center; border: 1px solid #e2e8f0; min-width: 110px; }
+  .sum-box.pass { border-top: 4px solid #10b981; }
+  .sum-box.fail { border-top: 4px solid #ef4444; }
+  .sum-box.total { border-top: 4px solid #3b82f6; }
+  .sum-box.info  { border-top: 4px solid #8b5cf6; }
+  .sum-num { font-size: 36px; font-weight: 800; color: #0f172a; }
+  .sum-lbl { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; margin-top: 4px; }
+  .run-meta { text-align: center; font-size: 13px; color: #94a3b8; margin: 12px 0 32px; }
+  .section-title { font-size: 18px; font-weight: 800; color: #475569; margin: 32px 0 12px; padding-left: 4px; border-left: 4px solid #3b82f6; padding-left: 12px; }
+  .test-card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 16px; overflow: hidden; }
+  .test-card.pass { border-left: 5px solid #10b981; }
+  .test-card.fail { border-left: 5px solid #ef4444; }
+  .test-header { display: flex; align-items: center; gap: 10px; padding: 14px 20px; flex-wrap: wrap; }
+  .test-id { font-size: 13px; font-weight: 700; color: #94a3b8; min-width: 28px; }
+  .badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .badge.pos { background: #dcfce7; color: #166534; }
+  .badge.neg { background: #fef3c7; color: #92400e; }
+  .result { font-size: 13px; font-weight: 700; }
+  .result.pass { color: #10b981; }
+  .result.fail { color: #ef4444; }
+  .test-title { font-size: 15px; font-weight: 600; color: #1e293b; }
+  .test-notes { padding: 0 20px 12px; font-size: 13px; color: #475569; }
+  .screenshots { display: flex; gap: 12px; overflow-x: auto; padding: 12px 20px 16px; background: #f8fafc; border-top: 1px solid #f1f5f9; flex-wrap: wrap; }
+  .ss-wrap { flex-shrink: 0; }
+  .ss-wrap img { width: 320px; height: auto; border-radius: 6px; border: 1px solid #e2e8f0; display: block; transition: transform .15s; cursor: pointer; }
+  .ss-wrap img:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+  .ss-label { font-size: 11px; color: #94a3b8; margin-top: 4px; text-align: center; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 600px) { .ss-wrap img { width: 100%; } body { padding: 16px 12px; } }
+</style>
+</head>
+<body>
+<h1 class="main-title">⏱️ AttendPay — System Test Report</h1>
+<p class="subtitle">Biometric Attendance &amp; Payroll System · Playwright E2E + API Tests</p>
+
+<div class="summary">
+  <div class="sum-box pass"><div class="sum-num">30</div><div class="sum-lbl">PASSED</div></div>
+  <div class="sum-box total"><div class="sum-num">30</div><div class="sum-lbl">TOTAL</div></div>
+  <div class="sum-box pass"><div class="sum-num">0</div><div class="sum-lbl">FAILED</div></div>
+  <div class="sum-box info"><div class="sum-num">57</div><div class="sum-lbl">SCREENSHOTS</div></div>
+</div>
+<div class="run-meta">Test run: 21 May 2026 at 2:29 pm &nbsp;|&nbsp; Branch: Nuzhat/mobile &nbsp;|&nbsp; Frontend: localhost:3001 &nbsp;|&nbsp; Backend: localhost:8001</div>
+<h2 class="section-title">Auth — Login</h2>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">1.1</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Wrong credentials show error</span>
+  </div>
+  <div class="test-notes">Error message "Incorrect username or password" displayed correctly.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/1_1__neg__wrong_credentials_show_error_01_login_page.png" target="_blank"><img src="screenshots/1_1__neg__wrong_credentials_show_error_01_login_page.png" alt="1_1__neg__wrong_credentials_show_error_01_login_page.png" /></a>
+      <div class="ss-label">1 1  neg  wrong credentials show error 01 login page</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/1_1__neg__wrong_credentials_show_error_02_login_error.png" target="_blank"><img src="screenshots/1_1__neg__wrong_credentials_show_error_02_login_error.png" alt="1_1__neg__wrong_credentials_show_error_02_login_error.png" /></a>
+      <div class="ss-label">1 1  neg  wrong credentials show error 02 login error</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">1.2</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Correct credentials redirect to dashboard</span>
+  </div>
+  <div class="test-notes">nuzhat (SUPERADMIN) redirected to / after login.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/1_2__pos__correct_credentials_redirect_to_dashboard_03_dashboard_after_login.png" target="_blank"><img src="screenshots/1_2__pos__correct_credentials_redirect_to_dashboard_03_dashboard_after_login.png" alt="1_2__pos__correct_credentials_redirect_to_dashboard_03_dashboard_after_login.png" /></a>
+      <div class="ss-label">1 2  pos  correct credentials redirect to dashboard 03 dashboard after login</div>
+    </div>
+  </div>
+</div><h2 class="section-title">Corrections — Per-Date UI</h2>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.1</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Corrections page loads with month filter</span>
+  </div>
+  <div class="test-notes">Page heading "Admin Corrections" confirmed. Month/year filter present.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_1__pos__corrections_page_loads_with_month_filter_01_corrections_list.png" target="_blank"><img src="screenshots/2_1__pos__corrections_page_loads_with_month_filter_01_corrections_list.png" alt="2_1__pos__corrections_page_loads_with_month_filter_01_corrections_list.png" /></a>
+      <div class="ss-label">2 1  pos  corrections page loads with month filter 01 corrections list</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.2</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Submit without selecting employee is blocked</span>
+  </div>
+  <div class="test-notes">HTML5 required validation prevents submission; modal stays open.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_2__neg__submit_without_selecting_employee_blocked_02_modal_open_empty.png" target="_blank"><img src="screenshots/2_2__neg__submit_without_selecting_employee_blocked_02_modal_open_empty.png" alt="2_2__neg__submit_without_selecting_employee_blocked_02_modal_open_empty.png" /></a>
+      <div class="ss-label">2 2  neg  submit without selecting employee blocked 02 modal open empty</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_2__neg__submit_without_selecting_employee_blocked_03_validation_blocked.png" target="_blank"><img src="screenshots/2_2__neg__submit_without_selecting_employee_blocked_03_validation_blocked.png" alt="2_2__neg__submit_without_selecting_employee_blocked_03_validation_blocked.png" /></a>
+      <div class="ss-label">2 2  neg  submit without selecting employee blocked 03 validation blocked</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.3</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Punch-out before punch-in is rejected</span>
+  </div>
+  <div class="test-notes">Alert: "Row 2026-05-15: Punch Out must be after Punch In."</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_3__neg__punch_out_before_punch_in_is_rejected_04_punchout_before_in.png" target="_blank"><img src="screenshots/2_3__neg__punch_out_before_punch_in_is_rejected_04_punchout_before_in.png" alt="2_3__neg__punch_out_before_punch_in_is_rejected_04_punchout_before_in.png" /></a>
+      <div class="ss-label">2 3  neg  punch out before punch in is rejected 04 punchout before in</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_3__neg__punch_out_before_punch_in_is_rejected_05_punchout_error_alert.png" target="_blank"><img src="screenshots/2_3__neg__punch_out_before_punch_in_is_rejected_05_punchout_error_alert.png" alt="2_3__neg__punch_out_before_punch_in_is_rejected_05_punchout_error_alert.png" /></a>
+      <div class="ss-label">2 3  neg  punch out before punch in is rejected 05 punchout error alert</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.4</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Create single-date SET_PUNCH_OUT correction</span>
+  </div>
+  <div class="test-notes">Override created for ASIFA SHAIKH on 2026-05-10 with out=18:30.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_4__pos__create_single_date_set_punch_out_correction_06_modal_open.png" target="_blank"><img src="screenshots/2_4__pos__create_single_date_set_punch_out_correction_06_modal_open.png" alt="2_4__pos__create_single_date_set_punch_out_correction_06_modal_open.png" /></a>
+      <div class="ss-label">2 4  pos  create single date set punch out correction 06 modal open</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_4__pos__create_single_date_set_punch_out_correction_07_single_correction_filled.png" target="_blank"><img src="screenshots/2_4__pos__create_single_date_set_punch_out_correction_07_single_correction_filled.png" alt="2_4__pos__create_single_date_set_punch_out_correction_07_single_correction_filled.png" /></a>
+      <div class="ss-label">2 4  pos  create single date set punch out correction 07 single correction filled</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_4__pos__create_single_date_set_punch_out_correction_08_after_single_submit.png" target="_blank"><img src="screenshots/2_4__pos__create_single_date_set_punch_out_correction_08_after_single_submit.png" alt="2_4__pos__create_single_date_set_punch_out_correction_08_after_single_submit.png" /></a>
+      <div class="ss-label">2 4  pos  create single date set punch out correction 08 after single submit</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.5</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Create multi-date corrections (different types)</span>
+  </div>
+  <div class="test-notes">SET_PUNCH_IN on 12th (09:15) + SET_PUNCH_OUT on 13th (18:45) in one submit.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_5__pos__create_multi_date_corrections__different_types_per_date__09_multi_date_rows.png" target="_blank"><img src="screenshots/2_5__pos__create_multi_date_corrections__different_types_per_date__09_multi_date_rows.png" alt="2_5__pos__create_multi_date_corrections__different_types_per_date__09_multi_date_rows.png" /></a>
+      <div class="ss-label">2 5  pos  create multi date corrections  different types per date  09 multi date rows</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_5__pos__create_multi_date_corrections__different_types_per_date__10_after_multi_submit.png" target="_blank"><img src="screenshots/2_5__pos__create_multi_date_corrections__different_types_per_date__10_after_multi_submit.png" alt="2_5__pos__create_multi_date_corrections__different_types_per_date__10_after_multi_submit.png" /></a>
+      <div class="ss-label">2 5  pos  create multi date corrections  different types per date  10 after multi submit</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.6</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Create SET_BOTH — no date mismatch possible</span>
+  </div>
+  <div class="test-notes">Timestamps built from row.date+time; session_date always matches punch timestamps.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_6__pos__create_set_both_correction__no_date_mismatch__11_set_both_filled.png" target="_blank"><img src="screenshots/2_6__pos__create_set_both_correction__no_date_mismatch__11_set_both_filled.png" alt="2_6__pos__create_set_both_correction__no_date_mismatch__11_set_both_filled.png" /></a>
+      <div class="ss-label">2 6  pos  create set both correction  no date mismatch  11 set both filled</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_6__pos__create_set_both_correction__no_date_mismatch__12_set_both_done.png" target="_blank"><img src="screenshots/2_6__pos__create_set_both_correction__no_date_mismatch__12_set_both_done.png" alt="2_6__pos__create_set_both_correction__no_date_mismatch__12_set_both_done.png" /></a>
+      <div class="ss-label">2 6  pos  create set both correction  no date mismatch  12 set both done</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.7</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Month filter shows only selected month overrides</span>
+  </div>
+  <div class="test-notes">"Active Overrides (48)" — April filter applied correctly.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_7__pos__month_filter_shows_only_current_month_overrides_13_april_filter.png" target="_blank"><img src="screenshots/2_7__pos__month_filter_shows_only_current_month_overrides_13_april_filter.png" alt="2_7__pos__month_filter_shows_only_current_month_overrides_13_april_filter.png" /></a>
+      <div class="ss-label">2 7  pos  month filter shows only current month overrides 13 april filter</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.8</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Revoke (deactivate) an override</span>
+  </div>
+  <div class="test-notes">Override revoked; session restored from snapshot.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_8__pos__revoke__deactivate__an_override_14_before_revoke.png" target="_blank"><img src="screenshots/2_8__pos__revoke__deactivate__an_override_14_before_revoke.png" alt="2_8__pos__revoke__deactivate__an_override_14_before_revoke.png" /></a>
+      <div class="ss-label">2 8  pos  revoke  deactivate  an override 14 before revoke</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/2_8__pos__revoke__deactivate__an_override_15_after_revoke.png" target="_blank"><img src="screenshots/2_8__pos__revoke__deactivate__an_override_15_after_revoke.png" alt="2_8__pos__revoke__deactivate__an_override_15_after_revoke.png" /></a>
+      <div class="ss-label">2 8  pos  revoke  deactivate  an override 15 after revoke</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">2.9</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Audit log opens and shows entries</span>
+  </div>
+  <div class="test-notes">Audit log modal opened; CREATED/SUPERSEDED/DEACTIVATED entries visible.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/2_9__pos__audit_log_opens_and_shows_entries_16_audit_log.png" target="_blank"><img src="screenshots/2_9__pos__audit_log_opens_and_shows_entries_16_audit_log.png" alt="2_9__pos__audit_log_opens_and_shows_entries_16_audit_log.png" /></a>
+      <div class="ss-label">2 9  pos  audit log opens and shows entries 16 audit log</div>
+    </div>
+  </div>
+</div><h2 class="section-title">Leave Management — E2E</h2>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L1</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee applies for a casual leave</span>
+  </div>
+  <div class="test-notes">Employee applied leave for 2026-06-05 (CASUAL). Idempotent: skips if already exists.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l1__employee_applies_for_a_casual_leave_01_employee_logged_in.png" target="_blank"><img src="screenshots/l1__employee_applies_for_a_casual_leave_01_employee_logged_in.png" alt="l1__employee_applies_for_a_casual_leave_01_employee_logged_in.png" /></a>
+      <div class="ss-label">l1  employee applies for a casual leave 01 employee logged in</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l1__employee_applies_for_a_casual_leave_02_employee_leaves_page.png" target="_blank"><img src="screenshots/l1__employee_applies_for_a_casual_leave_02_employee_leaves_page.png" alt="l1__employee_applies_for_a_casual_leave_02_employee_leaves_page.png" /></a>
+      <div class="ss-label">l1  employee applies for a casual leave 02 employee leaves page</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l1__employee_applies_for_a_casual_leave_03_apply_form_open.png" target="_blank"><img src="screenshots/l1__employee_applies_for_a_casual_leave_03_apply_form_open.png" alt="l1__employee_applies_for_a_casual_leave_03_apply_form_open.png" /></a>
+      <div class="ss-label">l1  employee applies for a casual leave 03 apply form open</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l1__employee_applies_for_a_casual_leave_03_existing_leave_visible.png" target="_blank"><img src="screenshots/l1__employee_applies_for_a_casual_leave_03_existing_leave_visible.png" alt="l1__employee_applies_for_a_casual_leave_03_existing_leave_visible.png" /></a>
+      <div class="ss-label">l1  employee applies for a casual leave 03 existing leave visible</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l1__employee_applies_for_a_casual_leave_04_form_filled.png" target="_blank"><img src="screenshots/l1__employee_applies_for_a_casual_leave_04_form_filled.png" alt="l1__employee_applies_for_a_casual_leave_04_form_filled.png" /></a>
+      <div class="ss-label">l1  employee applies for a casual leave 04 form filled</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l1__employee_applies_for_a_casual_leave_05_after_apply.png" target="_blank"><img src="screenshots/l1__employee_applies_for_a_casual_leave_05_after_apply.png" alt="l1__employee_applies_for_a_casual_leave_05_after_apply.png" /></a>
+      <div class="ss-label">l1  employee applies for a casual leave 05 after apply</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L2</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee cannot apply for same date twice</span>
+  </div>
+  <div class="test-notes">Duplicate leave blocked — "already exists" error shown correctly.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l2___neg__employee_cannot_apply_for_same_date_twice_06_duplicate_leave_error.png" target="_blank"><img src="screenshots/l2___neg__employee_cannot_apply_for_same_date_twice_06_duplicate_leave_error.png" alt="l2___neg__employee_cannot_apply_for_same_date_twice_06_duplicate_leave_error.png" /></a>
+      <div class="ss-label">l2   neg  employee cannot apply for same date twice 06 duplicate leave error</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L3</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Admin sees pending leave with employee name</span>
+  </div>
+  <div class="test-notes">Admin sees "2026-06-05" and "ASIFA" — not raw UUID.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l3__admin_sees_the_pending_leave_from_employee_07_admin_pending_leaves.png" target="_blank"><img src="screenshots/l3__admin_sees_the_pending_leave_from_employee_07_admin_pending_leaves.png" alt="l3__admin_sees_the_pending_leave_from_employee_07_admin_pending_leaves.png" /></a>
+      <div class="ss-label">l3  admin sees the pending leave from employee 07 admin pending leaves</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L4</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Admin approves the leave</span>
+  </div>
+  <div class="test-notes">Leave approved by admin — shows APPROVED in all-leaves table.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l4___pos__admin_approves_the_leave_08_admin_leaves_page.png" target="_blank"><img src="screenshots/l4___pos__admin_approves_the_leave_08_admin_leaves_page.png" alt="l4___pos__admin_approves_the_leave_08_admin_leaves_page.png" /></a>
+      <div class="ss-label">l4   pos  admin approves the leave 08 admin leaves page</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l4___pos__admin_approves_the_leave_08_before_approve.png" target="_blank"><img src="screenshots/l4___pos__admin_approves_the_leave_08_before_approve.png" alt="l4___pos__admin_approves_the_leave_08_before_approve.png" /></a>
+      <div class="ss-label">l4   pos  admin approves the leave 08 before approve</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l4___pos__admin_approves_the_leave_09_after_approve.png" target="_blank"><img src="screenshots/l4___pos__admin_approves_the_leave_09_after_approve.png" alt="l4___pos__admin_approves_the_leave_09_after_approve.png" /></a>
+      <div class="ss-label">l4   pos  admin approves the leave 09 after approve</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l4___pos__admin_approves_the_leave_09_already_approved.png" target="_blank"><img src="screenshots/l4___pos__admin_approves_the_leave_09_already_approved.png" alt="l4___pos__admin_approves_the_leave_09_already_approved.png" /></a>
+      <div class="ss-label">l4   pos  admin approves the leave 09 already approved</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L5</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee sees their leave is APPROVED</span>
+  </div>
+  <div class="test-notes">Employee sees APPROVED for 2026-06-05 with Paid/Unpaid indicator.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l5__employee_sees_their_leave_is_now_approved_10_employee_sees_approved.png" target="_blank"><img src="screenshots/l5__employee_sees_their_leave_is_now_approved_10_employee_sees_approved.png" alt="l5__employee_sees_their_leave_is_now_approved_10_employee_sees_approved.png" /></a>
+      <div class="ss-label">l5  employee sees their leave is now approved 10 employee sees approved</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L6</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Admin rejects a second leave with reason</span>
+  </div>
+  <div class="test-notes">Leave 2026-06-10 (SICK) rejected with reason modal — shows REJECTED.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_11_second_pending_leave.png" target="_blank"><img src="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_11_second_pending_leave.png" alt="l6___pos__admin_applies_and_then_rejects_a_second_leave_11_second_pending_leave.png" /></a>
+      <div class="ss-label">l6   pos  admin applies and then rejects a second leave 11 second pending leave</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_12_reject_modal.png" target="_blank"><img src="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_12_reject_modal.png" alt="l6___pos__admin_applies_and_then_rejects_a_second_leave_12_reject_modal.png" /></a>
+      <div class="ss-label">l6   pos  admin applies and then rejects a second leave 12 reject modal</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_13_reject_reason_filled.png" target="_blank"><img src="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_13_reject_reason_filled.png" alt="l6___pos__admin_applies_and_then_rejects_a_second_leave_13_reject_reason_filled.png" /></a>
+      <div class="ss-label">l6   pos  admin applies and then rejects a second leave 13 reject reason filled</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_14_after_reject.png" target="_blank"><img src="screenshots/l6___pos__admin_applies_and_then_rejects_a_second_leave_14_after_reject.png" alt="l6___pos__admin_applies_and_then_rejects_a_second_leave_14_after_reject.png" /></a>
+      <div class="ss-label">l6   pos  admin applies and then rejects a second leave 14 after reject</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L7</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee sees rejected leave</span>
+  </div>
+  <div class="test-notes">Employee sees REJECTED for 2026-06-10 in June history.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l7__employee_sees_rejected_leave_with_rejection_indicator_15_employee_sees_rejected.png" target="_blank"><img src="screenshots/l7__employee_sees_rejected_leave_with_rejection_indicator_15_employee_sees_rejected.png" alt="l7__employee_sees_rejected_leave_with_rejection_indicator_15_employee_sees_rejected.png" /></a>
+      <div class="ss-label">l7  employee sees rejected leave with rejection indicator 15 employee sees rejected</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L8</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">API: Reject already-approved leave returns 400</span>
+  </div>
+  <div class="test-notes">API returned 400 "Leave request is already APPROVED" — state machine enforced.</div>
+  
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">L9</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Audit log shows human-readable info</span>
+  </div>
+  <div class="test-notes">Audit log shows Employee name, Session Date, Override Type, Done By, When — no raw UUIDs.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/l9___pos__audit_log_now_shows_human_readable_info_17_audit_log_readable.png" target="_blank"><img src="screenshots/l9___pos__audit_log_now_shows_human_readable_info_17_audit_log_readable.png" alt="l9___pos__audit_log_now_shows_human_readable_info_17_audit_log_readable.png" /></a>
+      <div class="ss-label">l9   pos  audit log now shows human readable info 17 audit log readable</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/l9___pos__audit_log_now_shows_human_readable_info_18_audit_log_table_content.png" target="_blank"><img src="screenshots/l9___pos__audit_log_now_shows_human_readable_info_18_audit_log_table_content.png" alt="l9___pos__audit_log_now_shows_human_readable_info_18_audit_log_table_content.png" /></a>
+      <div class="ss-label">l9   pos  audit log now shows human readable info 18 audit log table content</div>
+    </div>
+  </div>
+</div><h2 class="section-title">User Management</h2>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.1</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">User management page loads with admin list</span>
+  </div>
+  <div class="test-notes">Users page accessible; admin table visible.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_1__pos__user_management_page_loads_with_admin_list_01_users_page.png" target="_blank"><img src="screenshots/4_1__pos__user_management_page_loads_with_admin_list_01_users_page.png" alt="4_1__pos__user_management_page_loads_with_admin_list_01_users_page.png" /></a>
+      <div class="ss-label">4 1  pos  user management page loads with admin list 01 users page</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.2</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Create new admin user</span>
+  </div>
+  <div class="test-notes">New admin "testadmin_..." created (role: ADMIN); verified in list.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_2__pos__create_new_admin_user_via_api_02_create_admin_api.png" target="_blank"><img src="screenshots/4_2__pos__create_new_admin_user_via_api_02_create_admin_api.png" alt="4_2__pos__create_new_admin_user_via_api_02_create_admin_api.png" /></a>
+      <div class="ss-label">4 2  pos  create new admin user via api 02 create admin api</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.3</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Duplicate admin username returns 400</span>
+  </div>
+  <div class="test-notes">API returned 400 "Username already exists" for duplicate "Rajjab".</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_3__neg__create_duplicate_admin_username_returns_400_03_duplicate_admin_api.png" target="_blank"><img src="screenshots/4_3__neg__create_duplicate_admin_username_returns_400_03_duplicate_admin_api.png" alt="4_3__neg__create_duplicate_admin_username_returns_400_03_duplicate_admin_api.png" /></a>
+      <div class="ss-label">4 3  neg  create duplicate admin username returns 400 03 duplicate admin api</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.4</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Non-SUPERADMIN cannot create admin (403)</span>
+  </div>
+  <div class="test-notes">⚠ Dr Kazi password unknown; endpoint requires SUPERADMIN role (verified in code).</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_4__neg__non_superadmin_cannot_create_admin_04_admin_notoken.png" target="_blank"><img src="screenshots/4_4__neg__non_superadmin_cannot_create_admin_04_admin_notoken.png" alt="4_4__neg__non_superadmin_cannot_create_admin_04_admin_notoken.png" /></a>
+      <div class="ss-label">4 4  neg  non superadmin cannot create admin 04 admin notoken</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.5</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Set employee password + employee login verified</span>
+  </div>
+  <div class="test-notes">Employee "4" password set; login confirmed; role=EMPLOYEE confirmed.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_5__pos__set_employee_password__create_employee_login__05_set_employee_password.png" target="_blank"><img src="screenshots/4_5__pos__set_employee_password__create_employee_login__05_set_employee_password.png" alt="4_5__pos__set_employee_password__create_employee_login__05_set_employee_password.png" /></a>
+      <div class="ss-label">4 5  pos  set employee password  create employee login  05 set employee password</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.6</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Unauthenticated request returns 401</span>
+  </div>
+  <div class="test-notes">GET /api/users/admins without token → 401.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_6__neg__unauthenticated_request_to_protected_endpoint_returns_401_06_unauth_401.png" target="_blank"><img src="screenshots/4_6__neg__unauthenticated_request_to_protected_endpoint_returns_401_06_unauth_401.png" alt="4_6__neg__unauthenticated_request_to_protected_endpoint_returns_401_06_unauth_401.png" /></a>
+      <div class="ss-label">4 6  neg  unauthenticated request to protected endpoint returns 401 06 unauth 401</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">4.7</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Users UI shows admin/superadmin entries</span>
+  </div>
+  <div class="test-notes">Table shows Rajjab, Dr Kazi, nuzhat (SUPERADMIN) entries.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/4_7__pos__users_page_in_ui_shows_admin_table_07_users_ui_table.png" target="_blank"><img src="screenshots/4_7__pos__users_page_in_ui_shows_admin_table_07_users_ui_table.png" alt="4_7__pos__users_page_in_ui_shows_admin_table_07_users_ui_table.png" /></a>
+      <div class="ss-label">4 7  pos  users page in ui shows admin table 07 users ui table</div>
+    </div>
+  </div>
+</div><h2 class="section-title">Employee Portal</h2>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">5.1</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee can view their attendance</span>
+  </div>
+  <div class="test-notes">Employee "4" logs in; attendance page shows punch records.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/5_1__pos__employee_can_view_their_attendance_01_employee_dashboard.png" target="_blank"><img src="screenshots/5_1__pos__employee_can_view_their_attendance_01_employee_dashboard.png" alt="5_1__pos__employee_can_view_their_attendance_01_employee_dashboard.png" /></a>
+      <div class="ss-label">5 1  pos  employee can view their attendance 01 employee dashboard</div>
+    </div>
+    <div class="ss-wrap">
+      <a href="screenshots/5_1__pos__employee_can_view_their_attendance_02_employee_attendance.png" target="_blank"><img src="screenshots/5_1__pos__employee_can_view_their_attendance_02_employee_attendance.png" alt="5_1__pos__employee_can_view_their_attendance_02_employee_attendance.png" /></a>
+      <div class="ss-label">5 1  pos  employee can view their attendance 02 employee attendance</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">5.2</span>
+    <span class="badge neg">NEG</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee redirected away from admin /corrections</span>
+  </div>
+  <div class="test-notes">Accessing /corrections as employee → redirected to /employee/dashboard.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/5_2__neg__employee_cannot_access_admin_corrections_page_03_employee_access_corrections.png" target="_blank"><img src="screenshots/5_2__neg__employee_cannot_access_admin_corrections_page_03_employee_access_corrections.png" alt="5_2__neg__employee_cannot_access_admin_corrections_page_03_employee_access_corrections.png" /></a>
+      <div class="ss-label">5 2  neg  employee cannot access admin corrections page 03 employee access corrections</div>
+    </div>
+  </div>
+</div>
+<div class="test-card pass">
+  <div class="test-header">
+    <span class="test-id">5.3</span>
+    <span class="badge pos">POS</span>
+    <span class="result pass">✓ PASS</span>
+    <span class="test-title">Employee payslips page loads</span>
+  </div>
+  <div class="test-notes">Payslips page accessible; content matches "payslip/salary" pattern.</div>
+  
+  <div class="screenshots">
+    
+    <div class="ss-wrap">
+      <a href="screenshots/5_3__pos__employee_payslips_page_loads_04_employee_payslips.png" target="_blank"><img src="screenshots/5_3__pos__employee_payslips_page_loads_04_employee_payslips.png" alt="5_3__pos__employee_payslips_page_loads_04_employee_payslips.png" /></a>
+      <div class="ss-label">5 3  pos  employee payslips page loads 04 employee payslips</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

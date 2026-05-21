@@ -175,12 +175,26 @@ async def corrections_log(
     employee_id: Optional[UUID] = None,
     limit: int = 50,
 ):
-    """View correction audit trail."""
+    """View correction audit trail with human-readable context."""
     db = get_supabase()
-    query = db.table("manual_corrections_log").select("*, session_overrides(employee_id, session_date, override_type)")
+    query = db.table("manual_corrections_log").select(
+        "*, session_overrides(employee_id, session_date, override_type, employees!session_overrides_employee_id_fkey(name))"
+    )
 
     if employee_id:
         query = query.eq("session_overrides.employee_id", str(employee_id))
 
     result = query.order("created_at", desc=True).limit(limit).execute()
-    return result.data
+
+    # Resolve performed_by UUIDs to usernames in one batch call
+    entries = result.data or []
+    performer_ids = list({e["performed_by"] for e in entries if e.get("performed_by")})
+    username_map = {}
+    if performer_ids:
+        users_resp = db.table("users").select("id, username").in_("id", performer_ids).execute()
+        username_map = {u["id"]: u["username"] for u in (users_resp.data or [])}
+
+    for entry in entries:
+        entry["performed_by_name"] = username_map.get(entry.get("performed_by"), "System")
+
+    return entries

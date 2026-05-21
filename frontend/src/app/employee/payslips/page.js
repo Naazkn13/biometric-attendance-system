@@ -184,7 +184,8 @@ export default function EmployeePayslipsPage() {
 
 function PayslipDetail({ payslip, fmt }) {
     const p = payslip;
-    const employeeName = 'Employee'; 
+    const employeeName = p.employees?.name || 'Employee'; 
+    const employeeId = p.employees?.device_user_id || p.employee_id.split('-')[0];
     const companyName = getCompanyName(employeeName);
     const d = new Date(p.period_start);
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -233,7 +234,8 @@ function PayslipDetail({ payslip, fmt }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #cbd5e1' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', borderRight: '1px solid #cbd5e1' }}>
                         <tbody>
-                            <tr><td style={labelStyle}>Employee ID</td><td style={valueStyle}>{p.employee_id.split('-')[0]}</td></tr>
+                            <tr><td style={labelStyle}>Employee Name</td><td style={valueStyle}>{employeeName}</td></tr>
+                            <tr><td style={labelStyle}>Employee ID</td><td style={valueStyle}>{employeeId}</td></tr>
                             <tr><td style={labelStyle}>Employment Type</td><td style={valueStyle}>Permanent</td></tr>
                             <tr><td style={labelStyle}>Working Days</td><td style={valueStyle}>{p.total_working_days}</td></tr>
                             <tr><td style={labelStyle}>Days Present</td><td style={valueStyle}>{p.days_present}</td></tr>

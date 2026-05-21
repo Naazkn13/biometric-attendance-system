@@ -1,0 +1,41 @@
+{
+  "nodes": [],
+  "edges": [],
+  "metadata": {
+    "repo_root": "/home/nuzhatkhan/biometric-attendance-system/tests",
+    "total_files": 0,
+    "total_nodes": 0,
+    "total_edges": 0,
+    "languages": [
+      "Python",
+      "JavaScript",
+      "Go",
+      "Rust",
+      "Java",
+      "Cpp",
+      "CSharp",
+      "Ruby",
+      "Php",
+      "Kotlin",
+      "Scala",
+      "Swift",
+      "Lua",
+      "Zig",
+      "PowerShell",
+      "Elixir",
+      "ObjectiveC",
+      "Julia",
+      "Vue",
+      "Svelte",
+      "Dart",
+      "Verilog",
+      "Shell",
+      "Html",
+      "Css",
+      "Config"
+    ],
+    "generated_by": "AgentKit IncrementalGraphBuilder v1.0",
+    "version": "1.0.0",
+    "incremental": true
+  }
+}
