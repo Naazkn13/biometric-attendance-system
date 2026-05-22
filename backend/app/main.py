@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_settings
-from app.routers import employees, attendance, overrides, payroll, devices, payslip, sync, holidays, adms, auth, employee_portal, leaves, users
+from app.routers import employees, attendance, overrides, payroll, devices, payslip, sync, holidays, adms, auth, employee_portal, leaves, users, notifications, voice
 
 # Configure logging
 logging.basicConfig(
@@ -114,6 +114,8 @@ app.include_router(auth.router)
 app.include_router(employee_portal.router)
 app.include_router(leaves.router)
 app.include_router(users.router)
+app.include_router(notifications.router)
+app.include_router(voice.router)
 
 
 # Global exception handler — ensures 500 errors return JSON (and CORS headers)

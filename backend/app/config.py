@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "your-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 480  # 8 hours
+    firebase_credentials_path: str = ""  # Path to Firebase service account JSON (optional)
 
     class Config:
         env_file = ".env"
