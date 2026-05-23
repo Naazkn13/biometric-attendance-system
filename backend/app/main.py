@@ -48,6 +48,14 @@ async def _run_device_poller_job():
     except Exception as e:
         logger.error(f"Device Poller job error: {e}")
 
+async def _run_special_attendance_job():
+    """Scheduled job: Special Attendance Worker (every day at 00:30)."""
+    try:
+        from app.workers.special_attendance import run_special_attendance
+        await run_special_attendance()
+    except Exception as e:
+        logger.error(f"Special Attendance job error: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,8 +69,11 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     scheduler.add_job(_run_device_poller_job, "interval", seconds=settings.device_poll_interval_seconds, id="device_poller")
     
+    # Run special attendance at 12:30 AM every day
+    scheduler.add_job(_run_special_attendance_job, "cron", hour=0, minute=30, id="special_attendance")
+    
     scheduler.start()
-    logger.info(f"⏰ Background workers started (Session Builder: 30s, Auto Checkout: 15m, Device Poller: {settings.device_poll_interval_seconds}s)")
+    logger.info(f"⏰ Background workers started (Session Builder: 30s, Auto Checkout: 15m, Device Poller: {settings.device_poll_interval_seconds}s, Special Attendance: 00:30 daily)")
 
     yield
 
