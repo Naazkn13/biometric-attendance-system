@@ -19,9 +19,7 @@ export default function LoginScreen() {
     try {
       const data = await login(username, password);
       await SecureStore.setItemAsync('token', data.access_token);
-      
-      const profile = await getMyProfile();
-      await SecureStore.setItemAsync('userRole', profile.role);
+      await SecureStore.setItemAsync('userRole', String(data.user?.role || 'EMPLOYEE'));
       
       router.replace('/(tabs)');
     } catch (error) {

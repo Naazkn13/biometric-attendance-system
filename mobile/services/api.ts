@@ -21,11 +21,9 @@ api.interceptors.request.use(async (config) => {
 });
 
 export const login = async (username, password) => {
-  const formData = new FormData();
-  formData.append('username', username);
-  formData.append('password', password);
-  const response = await api.post('/auth/token', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const response = await api.post('/api/auth/login', {
+    username,
+    password,
   });
   return response.data;
 };

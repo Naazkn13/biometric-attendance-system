@@ -1,44 +1,40 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Platform } from 'react-native';
-import * as ExpoSpeechRecognition from 'expo-speech-recognition';
+import { useState, useCallback } from 'react';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 
 export function useVoiceRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Note: expo-speech-recognition API might vary slightly, but generally follows standard speech events
-  useEffect(() => {
-    const startSub = ExpoSpeechRecognition.addSpeechStartListener(() => setIsListening(true));
-    const endSub = ExpoSpeechRecognition.addSpeechEndListener(() => setIsListening(false));
-    const errorSub = ExpoSpeechRecognition.addSpeechErrorListener((e) => {
-      setError(e.error?.message || 'Speech recognition failed');
-      setIsListening(false);
-    });
-    const resultSub = ExpoSpeechRecognition.addSpeechResultsListener((e) => {
-      const text = e.results?.[0]?.transcript || '';
-      setTranscript(text);
-    });
+  useSpeechRecognitionEvent('speechstart', () => setIsListening(true));
+  useSpeechRecognitionEvent('start', () => setIsListening(true));
+  
+  useSpeechRecognitionEvent('speechend', () => setIsListening(false));
+  useSpeechRecognitionEvent('end', () => setIsListening(false));
 
-    return () => {
-      startSub.remove();
-      endSub.remove();
-      errorSub.remove();
-      resultSub.remove();
-    };
-  }, []);
+  useSpeechRecognitionEvent('error', (e) => {
+    setError(e.message || 'Speech recognition failed');
+    setIsListening(false);
+  });
+
+  useSpeechRecognitionEvent('result', (e) => {
+    if (e.results && e.results.length > 0) {
+      const text = e.results[0].transcript || '';
+      setTranscript(text);
+    }
+  });
 
   const startListening = useCallback(async () => {
     setError(null);
     setTranscript('');
     try {
-      const { granted } = await ExpoSpeechRecognition.requestPermissionsAsync();
+      const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!granted) {
         setError('Microphone permission not granted');
         return;
       }
-      await ExpoSpeechRecognition.startSpeechRecognitionAsync({
-        language: 'en-US',
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
       });
     } catch (e: any) {
       setError(e.message);
@@ -47,7 +43,7 @@ export function useVoiceRecognition() {
 
   const stopListening = useCallback(async () => {
     try {
-      await ExpoSpeechRecognition.stopSpeechRecognitionAsync();
+      ExpoSpeechRecognitionModule.stop();
     } catch (e: any) {
       setError(e.message);
     }
