@@ -101,6 +101,13 @@ export default function EmployeeLayout({ children }) {
       <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '32px 24px' }}>
         {children}
       </main>
+      
+      <style jsx global>{`
+        /* Disable dark theme row hover globally for the employee portal */
+        tr:hover td {
+          background-color: transparent !important;
+        }
+      `}</style>
     </div>
   );
 }

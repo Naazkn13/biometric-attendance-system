@@ -145,7 +145,10 @@ export default function EmployeePayslipsPage() {
                                             </td>
                                             <td style={{ padding: '16px 12px', textAlign: 'right' }}>
                                                 <button onClick={() => setSelectedPayslipId(selectedPayslipId === p.id ? null : p.id)} style={{
-                                                    background: 'none', border: 'none', color: '#3b82f6', fontWeight: 600, fontSize: '13px', cursor: 'pointer', marginRight: '16px'
+                                                    background: selectedPayslipId === p.id ? '#fef2f2' : '#eff6ff',
+                                                    border: `1px solid ${selectedPayslipId === p.id ? '#fecaca' : '#bfdbfe'}`,
+                                                    color: selectedPayslipId === p.id ? '#dc2626' : '#2563eb',
+                                                    fontWeight: 600, fontSize: '13px', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', marginRight: '12px'
                                                 }}>
                                                     {selectedPayslipId === p.id ? 'Hide' : 'View'}
                                                 </button>
@@ -166,7 +169,16 @@ export default function EmployeePayslipsPage() {
 
             {selectedPayslip && (
                 <div id="payslip-printable" style={{ ...cardStyle, padding: '32px' }}>
-                    <PayslipDetail payslip={selectedPayslip} fmt={fmt} />
+                    <PayslipDetail 
+                        payslip={{
+                            ...selectedPayslip, 
+                            employee_name: selectedPayslip.employees?.name || 'Employee',
+                            device_user_id: selectedPayslip.employees?.device_user_id || selectedPayslip.employee_id.split('-')[0]
+                        }} 
+                        month={monthNames[new Date(selectedPayslip.period_start).getMonth()]}
+                        year={new Date(selectedPayslip.period_start).getFullYear()}
+                        fmt={fmt} 
+                    />
                 </div>
             )}
 
@@ -176,69 +188,75 @@ export default function EmployeePayslipsPage() {
                     body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
                     #payslip-printable { display: block !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important; }
                     #payslip-printable * { color: #000 !important; background: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    @page { margin: 0; size: A4; }
                 }
             `}</style>
         </div>
     );
 }
 
-function PayslipDetail({ payslip, fmt }) {
+function PayslipDetail({ payslip, month, year, fmt }) {
     const p = payslip;
-    const employeeName = p.employees?.name || 'Employee'; 
-    const employeeId = p.employees?.device_user_id || p.employee_id.split('-')[0];
-    const companyName = getCompanyName(employeeName);
-    const d = new Date(p.period_start);
-    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const monthStr = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    const companyName = getCompanyName(p.employee_name);
+    const isShruti = p.employee_name && p.employee_name.toLowerCase().includes('shruti');
+    const conveyance = p.calculation_details?.conveyance || 0;
 
-    const isShruti = employeeName.toLowerCase().includes('shruti');
-    const conveyance = isShruti ? 30 * (p.days_present || 0) : 0;
-
+    // Transparent breakdown: show full basic, deduct LOP + short hours separately
     const basicSalary = p.basic_salary || 0;
     const otPay = p.overtime_pay || 0;
-    const pt = p.calculation_details?.pt_deduction || 0;
-    const perDaySalary = p.calculation_details?.per_day_salary || 0;
-    const perHourRate = p.calculation_details?.per_hour_rate || 0;
+    const pt = p.calculation_details?.pt_deduction || p.pt_deduction || 0;
+    
+    // PL Adjustment
+    const plAdjustment = p.calculation_details?.pl_adjustment || p.pl_adjustment || 0;
+    const unusedPlDays = p.calculation_details?.unused_pl_days || p.unused_pl_days || 0;
+    
+    // Use the stored calculation details if available
+    const perDaySalary = p.calculation_details?.per_day_salary || p.per_day_salary || 0;
+    const perHourRate = p.calculation_details?.per_hour_rate || p.per_hour_rate || 0;
+    const totalDaySalary = p.calculation_details?.total_day_salary || p.total_day_salary || 0;
 
     const lopDeduction = (p.days_absent || 0) * perDaySalary;
-    const totalDaySalary = p.calculation_details?.total_day_salary || 0;
     const totalGap = basicSalary - totalDaySalary;
     const shortHoursDeduction = Math.max(0, Math.round((totalGap - lopDeduction) * 100) / 100);
 
-    const totalEarnings = basicSalary + otPay + conveyance;
+    const totalEarnings = basicSalary + otPay + conveyance + plAdjustment;
     const totalDeductions = lopDeduction + shortHoursDeduction + pt;
-    const netPay = p.final_salary;
+    const netPay = p.final_salary || Math.round((totalEarnings - totalDeductions) * 100) / 100;
 
     const paidLeavesCount = p.calculation_details?.paid_leaves_count || 0;
+    const unpaidLeavesCount = p.calculation_details?.unpaid_leaves_count || 0;
 
-    const cellStyle = { padding: '8px 14px', borderBottom: '1px solid #e2e8f0', fontSize: '13px', verticalAlign: 'top' };
-    const labelStyle = { ...cellStyle, color: '#475569', fontWeight: 500, width: '40%' };
-    const valueStyle = { ...cellStyle, fontWeight: 600, color: '#0f172a' };
-    const headerBg = { background: '#f8fafc', fontWeight: 700, padding: '10px 14px', fontSize: '13px', borderBottom: '2px solid #cbd5e1', color: '#1e293b' };
+    const cellStyle = { padding: '6px 12px', borderBottom: '1px solid #ddd', fontSize: '13px', verticalAlign: 'top' };
+    const labelStyle = { ...cellStyle, color: '#555', fontWeight: 500, width: '40%' };
+    const valueStyle = { ...cellStyle, fontWeight: 600, color: '#111' };
+    const headerBg = { background: '#f0f4f4', fontWeight: 700, padding: '8px 12px', fontSize: '13px', borderBottom: '2px solid #999', color: '#333' };
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', fontFamily: "'Inter', sans-serif", color: '#0f172a' }}>
-            <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '32px', borderBottom: '2px solid #cbd5e1', background: '#f8fafc' }}>
-                    <div style={{ width: '100px', height: '100px', marginRight: '24px', flexShrink: 0, background: '#e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
-                        🏥
+        <div style={{ maxWidth: '780px', margin: '0 auto', fontFamily: "'Segoe UI', Arial, sans-serif", color: '#000', background: '#fff', paddingTop: '80px' }}>
+            {/* Outer border — pushed down for letterhead */}
+            <div style={{ border: '2px solid #333', padding: '0' }}>
+
+                {/* Header with Logo */}
+                <div style={{ display: 'flex', alignItems: 'center', padding: '28px 24px', borderBottom: '2px solid #333' }}>
+                    <div style={{ width: '120px', height: '90px', marginRight: '24px', flexShrink: 0 }}>
+                        <img src="/logo.png" alt="Logo" style={{ width: '120px', height: '90px', objectFit: 'contain' }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{companyName}</h1>
-                        <div style={{ marginTop: '8px', fontSize: '15px', fontWeight: 600, color: '#475569' }}>
-                            Payslip for the Month of {monthStr}
+                        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800, letterSpacing: '1px', color: '#111' }}>{companyName}</h1>
+                        <div style={{ marginTop: '8px', fontSize: '14px', fontWeight: 600, color: '#444', borderTop: '1px solid #999', paddingTop: '6px' }}>
+                            Payslip for the Month of {month} {year}
                         </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #cbd5e1' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', borderRight: '1px solid #cbd5e1' }}>
+                {/* Employee Details Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #333' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', borderRight: '1px solid #999' }}>
                         <tbody>
-                            <tr><td style={labelStyle}>Employee Name</td><td style={valueStyle}>{employeeName}</td></tr>
-                            <tr><td style={labelStyle}>Employee ID</td><td style={valueStyle}>{employeeId}</td></tr>
+                            <tr><td style={labelStyle}>Employee Code</td><td style={valueStyle}>{p.device_user_id}</td></tr>
+                            <tr><td style={labelStyle}>Employee Name</td><td style={valueStyle}>{p.employee_name}</td></tr>
                             <tr><td style={labelStyle}>Employment Type</td><td style={valueStyle}>Permanent</td></tr>
-                            <tr><td style={labelStyle}>Working Days</td><td style={valueStyle}>{p.total_working_days}</td></tr>
-                            <tr><td style={labelStyle}>Days Present</td><td style={valueStyle}>{p.days_present}</td></tr>
+                            <tr><td style={labelStyle}>Shift Hours</td><td style={valueStyle}>{p.shift_hours || 8}h / day</td></tr>
                         </tbody>
                     </table>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -249,19 +267,20 @@ function PayslipDetail({ payslip, fmt }) {
                             <tr>
                                 <td style={labelStyle}>Leaves / LOP</td>
                                 <td style={valueStyle}>
-                                    <span style={{ color: p.days_absent > 0 ? '#ef4444' : '#0f172a' }}>{p.days_absent} LOP</span>
-                                    {paidLeavesCount > 0 && <span style={{ marginLeft: '8px', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>{paidLeavesCount} Paid Leave</span>}
+                                    <span style={{ color: p.days_absent > 0 ? '#c00' : '#111' }}>{p.days_absent || 0} LOP</span>
+                                    {paidLeavesCount > 0 && <span style={{ marginLeft: '8px', background: '#e0f2f1', color: '#00695c', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>{paidLeavesCount} Paid Leave</span>}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '2px solid #cbd5e1' }}>
+                {/* Earnings & Deductions - single table for perfect alignment */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '2px solid #333' }}>
                     <thead>
                         <tr>
                             <td style={headerBg}>Earnings</td>
-                            <td style={{ ...headerBg, textAlign: 'right', borderRight: '1px solid #cbd5e1' }}>Amount</td>
+                            <td style={{ ...headerBg, textAlign: 'right', borderRight: '1px solid #999' }}>Amount</td>
                             <td style={headerBg}>Deductions</td>
                             <td style={{ ...headerBg, textAlign: 'right' }}>Amount</td>
                         </tr>
@@ -269,55 +288,66 @@ function PayslipDetail({ payslip, fmt }) {
                     <tbody>
                         <tr>
                             <td style={cellStyle}>Basic Salary</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #cbd5e1' }}>{fmt(basicSalary)}</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #999' }}>{fmt(basicSalary)}</td>
                             <td style={cellStyle}>LOP / Absent ({p.days_absent || 0} days × {fmt(perDaySalary)})</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, color: lopDeduction > 0 ? '#ef4444' : '#0f172a' }}>{fmt(lopDeduction)}</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, color: lopDeduction > 0 ? '#c00' : '#111' }}>{fmt(lopDeduction)}</td>
                         </tr>
                         <tr>
                             <td style={cellStyle}>Overtime ({(p.overtime_hours || 0).toFixed(1)}h × {fmt(perHourRate)})</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #cbd5e1' }}>{fmt(otPay)}</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #999' }}>{fmt(otPay)}</td>
                             <td style={cellStyle}>Short Hours Deduction</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, color: shortHoursDeduction > 0 ? '#ef4444' : '#0f172a' }}>{fmt(shortHoursDeduction)}</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, color: shortHoursDeduction > 0 ? '#c00' : '#111' }}>{fmt(shortHoursDeduction)}</td>
                         </tr>
                         <tr>
-                            <td style={cellStyle}>Conveyance{isShruti ? ` (₹30 × ${p.days_present || 0} days)` : ''}</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #cbd5e1' }}>{fmt(conveyance)}</td>
+                            <td style={cellStyle}>Conveyance{conveyance > 0 ? ` (₹30 × ${p.days_present || 0} days)` : ''}</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #999' }}>{fmt(conveyance)}</td>
                             <td style={cellStyle}>Professional Tax (PT)</td>
                             <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600 }}>{fmt(pt)}</td>
                         </tr>
+                        <tr>
+                            <td style={cellStyle}>PL Adjusted ({unusedPlDays} day)</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 600, borderRight: '1px solid #999' }}>{plAdjustment > 0 ? fmt(plAdjustment) : ''}</td>
+                            <td style={{ ...cellStyle, height: '24px' }}></td>
+                            <td style={cellStyle}></td>
+                        </tr>
                     </tbody>
                     <tfoot>
-                        <tr style={{ borderTop: '2px solid #cbd5e1', background: '#f8fafc' }}>
-                            <td style={{ ...cellStyle, fontWeight: 700 }}>Total Earnings</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 800, fontSize: '14px', borderRight: '1px solid #cbd5e1' }}>{fmt(totalEarnings)}</td>
-                            <td style={{ ...cellStyle, fontWeight: 700 }}>Total Deductions</td>
-                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 800, fontSize: '14px', color: '#ef4444' }}>{fmt(totalDeductions)}</td>
+                        <tr style={{ borderTop: '2px solid #333' }}>
+                            <td style={{ ...cellStyle, fontWeight: 700, fontSize: '13px' }}>Total Earnings (in Rs.)</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 800, fontSize: '14px', borderRight: '1px solid #999' }}>{fmt(totalEarnings)}</td>
+                            <td style={{ ...cellStyle, fontWeight: 700, fontSize: '13px' }}>Total Deductions (in Rs.)</td>
+                            <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 800, fontSize: '14px', color: '#c00' }}>{fmt(totalDeductions)}</td>
                         </tr>
                     </tfoot>
                 </table>
 
-                <div style={{ padding: '24px 32px', borderBottom: '1px solid #cbd5e1', background: '#fff' }}>
+                {/* Net Pay Row */}
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid #333', fontSize: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, fontSize: '16px' }}>Net Pay for the Month:</span>
-                        <span style={{ fontWeight: 800, fontSize: '24px', color: '#3b82f6' }}>{fmt(netPay)}</span>
+                        <span style={{ fontWeight: 600 }}>Net Pay for the Month (Total Earnings - Total Deductions):</span>
+                        <span style={{ fontWeight: 800, fontSize: '18px', color: '#0d7377' }}>{fmt(netPay)}</span>
                     </div>
                 </div>
 
-                <div style={{ padding: '16px 32px', borderBottom: '2px solid #cbd5e1', fontSize: '13px', fontStyle: 'italic', color: '#64748b', background: '#f8fafc' }}>
+                {/* Amount in Words */}
+                <div style={{ padding: '10px 16px', borderBottom: '2px solid #333', fontSize: '12px', fontStyle: 'italic', color: '#444' }}>
                     {numberToWords(netPay)}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '60px 48px 32px' }}>
+                {/* Signatures */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '30px 40px 20px' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ borderTop: '1px solid #cbd5e1', width: '200px', marginBottom: '8px' }}></div>
-                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Employer Signature</div>
+                        <div style={{ borderTop: '1px solid #333', width: '180px', marginBottom: '4px' }}></div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#555' }}>Employer Signature</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ borderTop: '1px solid #cbd5e1', width: '200px', marginBottom: '8px' }}></div>
-                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Employee Signature</div>
+                        <div style={{ borderTop: '1px solid #333', width: '180px', marginBottom: '4px' }}></div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#555' }}>Employee Signature</div>
                     </div>
                 </div>
             </div>
+
+
         </div>
     );
 }

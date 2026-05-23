@@ -197,7 +197,7 @@ export default function PayslipsPage() {
                     body { background: #fff !important; margin: 0 !important; }
                     .app-layout { display: block !important; }
                     .main-content { padding: 0 !important; margin: 0 !important; }
-                    @page { margin: 10mm 10mm 10mm 10mm; size: A4; }
+                    @page { margin: 0; size: A4; }
                 }
             `}</style>
         </div>
