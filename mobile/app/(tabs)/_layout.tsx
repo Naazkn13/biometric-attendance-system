@@ -35,6 +35,22 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="attendance"
+        options={{
+          title: 'Attendance',
+          tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
+          href: role === 'EMPLOYEE' ? '/attendance' : null,
+        }}
+      />
+      <Tabs.Screen
+        name="payslips"
+        options={{
+          title: 'Payslips',
+          tabBarIcon: ({ color }) => <TabBarIcon name="money" color={color} />,
+          href: role === 'EMPLOYEE' ? '/payslips' : null,
+        }}
+      />
+      <Tabs.Screen
         name="admin-sync"
         options={{
           title: 'Sync',

@@ -1,8 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// Assuming running locally, you might need to change this to your computer's IP address
-// when testing on a real device.
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.194:8000';
 
 export const api = axios.create({
@@ -20,29 +18,57 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-export const login = async (username, password) => {
-  const response = await api.post('/api/auth/login', {
-    username,
-    password,
-  });
+// ── Auth ──
+export const login = async (username: string, password: string) => {
+  const response = await api.post('/api/auth/login', { username, password });
   return response.data;
 };
 
+// ── Employee Portal ──
 export const getMyProfile = async () => {
   const response = await api.get('/api/portal/my-profile');
   return response.data;
 };
 
-// Instead of a dedicated voice attendance endpoint, we use the device sync endpoint or log it
-export const logVoiceInteraction = async (data) => {
-  const response = await api.post('/api/voice/log', data);
+export const getMyAttendance = async (year: number, month: number) => {
+  const response = await api.get(`/api/portal/my-attendance?year=${year}&month=${month}`);
+  return response.data;
+};
+
+export const getMyPayslips = async (year?: number, month?: number) => {
+  let url = '/api/portal/my-payslips';
+  const params: string[] = [];
+  if (year) params.push(`year=${year}`);
+  if (month) params.push(`month=${month}`);
+  if (params.length) url += '?' + params.join('&');
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getMyPayslipDetail = async (periodStart: string) => {
+  const response = await api.get(`/api/portal/my-payslip/${periodStart}`);
+  return response.data;
+};
+
+// ── Admin ──
+export const getEmployees = async () => {
+  const response = await api.get('/api/employees');
+  return response.data;
+};
+
+export const getTodayAttendance = async () => {
+  const response = await api.get('/api/attendance/today');
+  return response.data;
+};
+
+export const getAttendanceSessions = async (year: number, month: number) => {
+  const response = await api.get(`/api/attendance/sessions?year=${year}&month=${month}`);
   return response.data;
 };
 
 // Upload DAT file (Admin Sync)
-export const uploadSyncFile = async (uri, name) => {
+export const uploadSyncFile = async (uri: string, name?: string) => {
   const formData = new FormData();
-  // Provide a minimal file-like object to React Native FormData
   formData.append('file', {
     uri,
     name: name || 'manual_sync.dat',
@@ -57,3 +83,4 @@ export const uploadSyncFile = async (uri, name) => {
   });
   return response.data;
 };
+
