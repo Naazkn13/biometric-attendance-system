@@ -66,16 +66,16 @@ export default function EmployeeDashboard() {
               <Text style={styles.adminItemHint}>Go to Admin Sync tab</Text>
             </View>
             <View style={styles.adminItem}>
-              <FontAwesome name="bell" size={28} color="#f59e0b" />
-              <Text style={styles.adminItemText}>Notifications</Text>
-              <Text style={styles.adminItemHint}>Push alerts active</Text>
+              <FontAwesome name="bed" size={28} color="#f59e0b" />
+              <Text style={styles.adminItemText}>Leaves</Text>
+              <Text style={styles.adminItemHint}>Check pending approvals</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.infoCard}>
           <Text style={styles.infoCardText}>
-            💡 Use the <Text style={{ fontWeight: '800' }}>Admin Sync</Text> tab to upload .dat files from the biometric device.
+            💡 Navigate to the <Text style={{ fontWeight: '800' }}>Leaves</Text> tab to manage and approve pending leave requests from employees.
           </Text>
         </View>
 

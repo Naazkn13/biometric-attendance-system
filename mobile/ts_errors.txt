@@ -1,0 +1,7 @@
+app/login.tsx(26,35): error TS18046: 'error' is of type 'unknown'.
+app/login.tsx(26,67): error TS18046: 'error' is of type 'unknown'.
+hooks/useNotificationPoller.ts(11,5): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+hooks/usePushNotifications.ts(7,35): error TS2322: Type 'Promise<{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: false; }>' is not assignable to type 'Promise<NotificationBehavior>'.
+  Type '{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: false; }' is missing the following properties from type 'NotificationBehavior': shouldShowBanner, shouldShowList
+hooks/usePushNotifications.ts(17,32): error TS2554: Expected 1 arguments, but got 0.
+hooks/usePushNotifications.ts(18,28): error TS2554: Expected 1 arguments, but got 0.

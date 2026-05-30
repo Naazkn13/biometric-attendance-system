@@ -45,7 +45,14 @@
       "expo-secure-store",
       "expo-speech-recognition",
       "expo-document-picker",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow AttendPay to access your microphone for voice commands."
+        }
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

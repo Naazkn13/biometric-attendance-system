@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { getMyPayslips, getMyPayslipDetail } from '../../services/api';
+import { getMyPayslips, getMyPayslipDetail, getAllPayslips } from '../../services/api';
+import * as SecureStore from 'expo-secure-store';
 
 const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const fmt = (val: number | null | undefined) => val === undefined || val === null ? '₹0' : `₹${Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -14,16 +15,25 @@ export default function PayslipsScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [role, setRole] = useState<string>('EMPLOYEE');
 
   useEffect(() => {
-    loadPayslips();
-  }, [year]);
+    SecureStore.getItemAsync('userRole').then(r => setRole(r || 'EMPLOYEE'));
+  }, []);
+
+  useEffect(() => {
+    if (role) {
+      loadPayslips();
+    }
+  }, [year, role]);
 
   const loadPayslips = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getMyPayslips(year);
+      const data = role === 'ADMIN' 
+        ? await getAllPayslips(year, 0) // Backend probably ignores month 0 or gets all for the year
+        : await getMyPayslips(year);
       setPayslips(data || []);
     } catch (e: any) {
       setError(e.response?.data?.detail || e.message || 'Failed to load');

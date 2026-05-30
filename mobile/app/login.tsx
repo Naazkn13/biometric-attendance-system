@@ -22,7 +22,7 @@ export default function LoginScreen() {
       await SecureStore.setItemAsync('userRole', String(data.user?.role || 'EMPLOYEE'));
       
       router.replace('/(tabs)');
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Login Failed', error.response?.data?.detail || error.message);
     } finally {
       setLoading(false);

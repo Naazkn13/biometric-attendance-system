@@ -50,6 +50,27 @@ export const getMyPayslipDetail = async (periodStart: string) => {
   return response.data;
 };
 
+// ── Leaves (Employee) ──
+export const getMyLeaves = async (year?: number, month?: number) => {
+  let url = '/api/leaves/my-leaves';
+  const params: string[] = [];
+  if (year) params.push(`year=${year}`);
+  if (month) params.push(`month=${month}`);
+  if (params.length) url += '?' + params.join('&');
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getMyLeaveBalance = async (year: number, month: number) => {
+  const response = await api.get(`/api/leaves/my-balance?year=${year}&month=${month}`);
+  return response.data;
+};
+
+export const applyLeave = async (data: { leave_date: string, leave_end_date?: string, leave_type: string, reason: string }) => {
+  const response = await api.post('/api/leaves/apply', data);
+  return response.data;
+};
+
 // ── Admin ──
 export const getEmployees = async () => {
   const response = await api.get('/api/employees');
@@ -63,6 +84,45 @@ export const getTodayAttendance = async () => {
 
 export const getAttendanceSessions = async (year: number, month: number) => {
   const response = await api.get(`/api/attendance/sessions?year=${year}&month=${month}`);
+  return response.data;
+};
+
+// ── Leaves (Admin) ──
+export const getPendingLeaves = async () => {
+  const response = await api.get('/api/leaves/pending');
+  return response.data;
+};
+
+export const getAllLeaves = async (year?: number, month?: number, status?: string) => {
+  let url = '/api/leaves/all';
+  const params: string[] = [];
+  if (year) params.push(`year=${year}`);
+  if (month) params.push(`month=${month}`);
+  if (status) params.push(`status=${status}`);
+  if (params.length) url += '?' + params.join('&');
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const approveLeave = async (leaveId: string) => {
+  const response = await api.post(`/api/leaves/${leaveId}/approve`);
+  return response.data;
+};
+
+export const rejectLeave = async (leaveId: string, rejection_reason: string) => {
+  const response = await api.post(`/api/leaves/${leaveId}/reject`, { rejection_reason });
+  return response.data;
+};
+
+// ── Payslips (Admin) ──
+export const getAllPayslips = async (year: number, month: number) => {
+  const response = await api.get(`/api/payslips/admin?year=${year}&month=${month}`);
+  return response.data;
+};
+
+// ── Voice AI ──
+export const logVoiceInteraction = async (data: any) => {
+  const response = await api.post('/api/voice/log', data);
   return response.data;
 };
 

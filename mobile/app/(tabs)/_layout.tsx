@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { Image, View } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -11,6 +12,17 @@ function TabBarIcon(props: {
   color: string;
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+}
+
+function LogoHeader() {
+  return (
+    <View style={{ marginLeft: 16 }}>
+      <Image 
+        source={require('../../assets/images/icon.png')} 
+        style={{ width: 32, height: 32, borderRadius: 8 }} 
+      />
+    </View>
+  );
 }
 
 export default function TabLayout() {
@@ -26,6 +38,8 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: useClientOnlyValue(false, true),
+        headerTitleStyle: { fontWeight: '700' },
+        headerLeft: () => <LogoHeader />,
       }}>
       <Tabs.Screen
         name="index"
@@ -39,7 +53,15 @@ export default function TabLayout() {
         options={{
           title: 'Attendance',
           tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
-          href: role === 'EMPLOYEE' ? '/attendance' : null,
+          // Both Admin and Employee can view attendance (Admins view company-wide)
+        }}
+      />
+      <Tabs.Screen
+        name="leaves"
+        options={{
+          title: 'Leaves',
+          tabBarIcon: ({ color }) => <TabBarIcon name="bed" color={color} />,
+          // Both Admin and Employee have a Leaves screen
         }}
       />
       <Tabs.Screen
@@ -47,7 +69,7 @@ export default function TabLayout() {
         options={{
           title: 'Payslips',
           tabBarIcon: ({ color }) => <TabBarIcon name="money" color={color} />,
-          href: role === 'EMPLOYEE' ? '/payslips' : null,
+          // Both Admin and Employee have a Payslips screen
         }}
       />
       <Tabs.Screen

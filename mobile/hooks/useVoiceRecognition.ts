@@ -51,13 +51,29 @@ export function useVoiceRecognition() {
 
   const parseIntent = (text: string) => {
     const lower = text.toLowerCase();
+    
+    // Attendance Intents
     if (lower.includes('punch in') || lower.includes('check in')) {
-      return 'Punch In';
+      return { intent: 'PUNCH_IN' };
     }
     if (lower.includes('punch out') || lower.includes('check out') || lower.includes('checkout')) {
-      return 'Punch Out';
+      return { intent: 'PUNCH_OUT' };
     }
-    return 'Unknown';
+    
+    // Leave Admin Intents
+    if (lower.includes('approve') && lower.includes('leave')) {
+      return { intent: 'APPROVE_LEAVE' };
+    }
+    if (lower.includes('reject') && lower.includes('leave')) {
+      return { intent: 'REJECT_LEAVE' };
+    }
+
+    // Leave Employee Intents
+    if (lower.includes('apply') && lower.includes('leave')) {
+      return { intent: 'APPLY_LEAVE' };
+    }
+
+    return { intent: 'UNKNOWN' };
   };
 
   return {

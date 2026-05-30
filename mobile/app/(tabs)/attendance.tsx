@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { getMyAttendance } from '../../services/api';
+import { getMyAttendance, getAttendanceSessions } from '../../services/api';
+import * as SecureStore from 'expo-secure-store';
 
 const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -11,16 +12,25 @@ export default function AttendanceScreen() {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<string>('EMPLOYEE');
 
   useEffect(() => {
-    loadAttendance();
-  }, [year, month]);
+    SecureStore.getItemAsync('userRole').then(r => setRole(r || 'EMPLOYEE'));
+  }, []);
+
+  useEffect(() => {
+    if (role) {
+      loadAttendance();
+    }
+  }, [year, month, role]);
 
   const loadAttendance = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getMyAttendance(year, month);
+      const data = role === 'ADMIN' 
+        ? await getAttendanceSessions(year, month)
+        : await getMyAttendance(year, month);
       setAttendance(data || []);
     } catch (e: any) {
       setError(e.response?.data?.detail || e.message || 'Failed to load');

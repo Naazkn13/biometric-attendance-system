@@ -45,15 +45,22 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+import VoiceAssistant from '../components/VoiceAssistant';
+import { useNotificationPoller } from '../hooks/useNotificationPoller';
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  useNotificationPoller(); // Start background polling for voice notifications
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
+      {/* Global floating voice assistant */}
+      <VoiceAssistant />
     </ThemeProvider>
   );
 }
