@@ -93,7 +93,7 @@ async def list_sessions(
 ):
     """List attendance sessions with filters."""
     db = get_supabase()
-    query = db.table("attendance_sessions").select("*, employees(name)")
+    query = db.table("attendance_sessions").select("*, employees(name, basic_salary)")
 
     if employee_id:
         query = query.eq("employee_id", str(employee_id))

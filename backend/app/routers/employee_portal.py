@@ -7,7 +7,7 @@ from app.utils.auth_utils import get_current_user, require_role
 router = APIRouter(prefix="/api/portal", tags=["employee_portal"])
 
 @router.get("/my-profile")
-async def get_my_profile(current_user: dict = Depends(require_role(["EMPLOYEE"]))):
+async def get_my_profile(current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
     
@@ -24,7 +24,7 @@ async def get_my_profile(current_user: dict = Depends(require_role(["EMPLOYEE"])
 async def get_my_payslips(
     year: Optional[int] = None,
     month: Optional[int] = None,
-    current_user: dict = Depends(require_role(["EMPLOYEE"]))
+    current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))
 ):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
@@ -50,7 +50,7 @@ async def get_my_payslips(
 @router.get("/my-payslip/{period_start}")
 async def get_my_payslip_detail(
     period_start: str,
-    current_user: dict = Depends(require_role(["EMPLOYEE"]))
+    current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))
 ):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
@@ -66,7 +66,7 @@ async def get_my_payslip_detail(
 async def get_my_attendance(
     year: int = Query(..., description="Year"),
     month: int = Query(..., description="Month 1-12"),
-    current_user: dict = Depends(require_role(["EMPLOYEE"]))
+    current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))
 ):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
@@ -77,6 +77,6 @@ async def get_my_attendance(
     else:
         end_date = date(year, month + 1, 1)
         
-    response = supabase.table("attendance_sessions").select("*").eq("employee_id", employee_id).gte("session_date", start_date.isoformat()).lt("session_date", end_date.isoformat()).order("session_date").execute()
+    response = supabase.table("attendance_sessions").select("*, employees(basic_salary)").eq("employee_id", employee_id).gte("session_date", start_date.isoformat()).lt("session_date", end_date.isoformat()).order("session_date").execute()
     
     return response.data

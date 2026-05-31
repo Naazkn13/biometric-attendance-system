@@ -110,7 +110,7 @@ async def list_overrides(
 ):
     """List overrides with optional filters."""
     db = get_supabase()
-    query = db.table("session_overrides").select("*")
+    query = db.table("session_overrides").select("*, employees!session_overrides_employee_id_fkey(name)")
 
     if employee_id:
         query = query.eq("employee_id", str(employee_id))

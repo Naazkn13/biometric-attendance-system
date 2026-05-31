@@ -28,7 +28,7 @@ export default function AttendanceScreen() {
     setLoading(true);
     setError(null);
     try {
-      const data = role === 'ADMIN' 
+      const data = ['ADMIN', 'SUPERADMIN', 'HM'].includes(role)
         ? await getAttendanceSessions(year, month)
         : await getMyAttendance(year, month);
       setAttendance(data || []);
@@ -61,6 +61,8 @@ export default function AttendanceScreen() {
       default: return { bg: '#f1f5f9', text: '#475569' };
     }
   };
+
+  const isAdmin = ['ADMIN', 'SUPERADMIN', 'HM'].includes(role);
 
   return (
     <View style={styles.container}>
@@ -107,42 +109,49 @@ export default function AttendanceScreen() {
           <Text style={styles.emptyText}>No records for {monthNames[month - 1]} {year}</Text>
         </View>
       ) : (
-        <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, { flex: 2 }]}>Date</Text>
-            <Text style={[styles.headerCell, { flex: 1.5 }]}>In</Text>
-            <Text style={[styles.headerCell, { flex: 1.5 }]}>Out</Text>
-            <Text style={[styles.headerCell, { flex: 1, textAlign: 'right' }]}>Hrs</Text>
-            <Text style={[styles.headerCell, { flex: 1.5, textAlign: 'right' }]}>Status</Text>
-          </View>
-          {attendance.map((session: any) => {
-            const dateObj = new Date(session.session_date);
-            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-            const dayNum = dateObj.getDate();
-            const badge = getStatusStyle(session.status);
-            
-            return (
-              <View key={session.id} style={styles.tableRow}>
-                <View style={{ flex: 2 }}>
-                  <Text style={styles.dateText}>{dayNum} <Text style={styles.dayText}>{dayName}</Text></Text>
-                </View>
-                <Text style={[styles.timeText, { flex: 1.5 }]}>{formatTime(session.punch_in_time)}</Text>
-                <Text style={[styles.timeText, { flex: 1.5 }]}>{formatTime(session.punch_out_time)}</Text>
-                <Text style={[styles.hoursText, { flex: 1, textAlign: 'right', color: session.net_hours > 0 ? '#16a34a' : '#94a3b8' }]}>
-                  {session.net_hours || 0}h
-                </Text>
-                <View style={{ flex: 1.5, alignItems: 'flex-end' }}>
-                  <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                    <Text style={[styles.statusText, { color: badge.text }]}>
-                      {session.status === 'COMPLETE' ? '✓' : session.status === 'MISSING_OUT' ? 'Miss' : 'Auto'}
-                    </Text>
-                  </View>
-                </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} style={styles.listContainer} showsVerticalScrollIndicator={false}>
+          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+            <View style={{ minWidth: isAdmin ? 600 : 500, paddingRight: 16 }}>
+              {/* Header */}
+              <View style={styles.tableHeader}>
+                {isAdmin && <Text style={[styles.headerCell, { flex: 2 }]}>Employee</Text>}
+                <Text style={[styles.headerCell, { flex: 1.5 }]}>Date</Text>
+                <Text style={[styles.headerCell, { flex: 1.5 }]}>In</Text>
+                <Text style={[styles.headerCell, { flex: 1.5 }]}>Out</Text>
+                <Text style={[styles.headerCell, { flex: 1, textAlign: 'right' }]}>Hrs</Text>
+                <Text style={[styles.headerCell, { flex: 1, textAlign: 'center' }]}>Stat</Text>
               </View>
-            );
-          })}
-          <View style={{ height: 40 }} />
+              {attendance.map((session: any) => {
+                const dateObj = new Date(session.session_date);
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayNum = dateObj.getDate();
+                const badge = getStatusStyle(session.status);
+                
+                return (
+                  <View key={session.id} style={styles.tableRow}>
+                    {isAdmin && (
+                      <Text style={[styles.dateText, { flex: 2, color: '#3b82f6', fontSize: 12 }]} numberOfLines={1}>
+                        {session.employee_name || 'Unknown'}
+                      </Text>
+                    )}
+                    <View style={{ flex: 1.5 }}>
+                      <Text style={styles.dateText}>{dayNum} <Text style={styles.dayText}>{dayName}</Text></Text>
+                    </View>
+                    <Text style={[styles.timeText, { flex: 1.5 }]}>{formatTime(session.punch_in_time)}</Text>
+                    <Text style={[styles.timeText, { flex: 1.5 }]}>{formatTime(session.punch_out_time)}</Text>
+                    <Text style={[styles.hoursText, { flex: 1, textAlign: 'right', color: session.net_hours > 0 ? '#16a34a' : '#94a3b8' }]}>
+                      {session.net_hours || 0}h
+                    </Text>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={[styles.statusText, { color: badge.text }]}>
+                        {session.status === 'COMPLETE' ? '✓' : session.status === 'MISSING_OUT' ? 'X' : '!'}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
         </ScrollView>
       )}
     </View>

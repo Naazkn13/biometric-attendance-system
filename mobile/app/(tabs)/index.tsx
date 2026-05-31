@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { getMyProfile } from '../../services/api';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
@@ -49,9 +49,9 @@ export default function EmployeeDashboard() {
   }
 
   // ── ADMIN DASHBOARD ──
-  if (role === 'ADMIN') {
+  if (role === 'ADMIN' || role === 'SUPERADMIN' || role === 'HM') {
     return (
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.baseContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Admin Panel 🔐</Text>
           <Text style={styles.subtitle}>Manage attendance & payroll</Text>
@@ -60,16 +60,36 @@ export default function EmployeeDashboard() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Quick Actions</Text>
           <View style={styles.adminGrid}>
-            <View style={styles.adminItem}>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/employees')}>
+              <FontAwesome name="users" size={28} color="#8b5cf6" />
+              <Text style={styles.adminItemText}>Employees</Text>
+              <Text style={styles.adminItemHint}>Manage basic details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/corrections')}>
+              <FontAwesome name="edit" size={28} color="#f97316" />
+              <Text style={styles.adminItemText}>Corrections</Text>
+              <Text style={styles.adminItemHint}>Approve overrides</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.adminGrid, { marginTop: 16 }]}>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/holidays')}>
+              <FontAwesome name="calendar" size={28} color="#14b8a6" />
+              <Text style={styles.adminItemText}>Holidays</Text>
+              <Text style={styles.adminItemHint}>Holiday master</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/shifts')}>
+              <FontAwesome name="clock-o" size={28} color="#ec4899" />
+              <Text style={styles.adminItemText}>Shifts</Text>
+              <Text style={styles.adminItemHint}>Shift master</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.adminGrid, { marginTop: 16 }]}>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/admin-sync')}>
               <FontAwesome name="upload" size={28} color="#3b82f6" />
               <Text style={styles.adminItemText}>Upload .dat</Text>
-              <Text style={styles.adminItemHint}>Go to Admin Sync tab</Text>
-            </View>
-            <View style={styles.adminItem}>
-              <FontAwesome name="bed" size={28} color="#f59e0b" />
-              <Text style={styles.adminItemText}>Leaves</Text>
-              <Text style={styles.adminItemHint}>Check pending approvals</Text>
-            </View>
+              <Text style={styles.adminItemHint}>USB sync module</Text>
+            </TouchableOpacity>
+            <View style={[styles.adminItem, { opacity: 0 }]} />
           </View>
         </View>
 
@@ -83,13 +103,13 @@ export default function EmployeeDashboard() {
           <FontAwesome name="sign-out" size={18} color="#ef4444" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     );
   }
 
   // ── EMPLOYEE DASHBOARD ──
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.baseContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello, {profile?.name?.split(' ')[0] || 'Employee'} 👋</Text>
         <Text style={styles.subtitle}>Welcome to your AttendPay Portal</Text>
@@ -121,11 +141,19 @@ export default function EmployeeDashboard() {
         <FontAwesome name="sign-out" size={18} color="#ef4444" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  baseContainer: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  scrollContainer: {
+    padding: 24,
+    paddingBottom: 100,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f1f5f9',

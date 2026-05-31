@@ -9,6 +9,7 @@ const fmt = (val: number | null | undefined) => val === undefined || val === nul
 export default function PayslipsScreen() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
   const [payslips, setPayslips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,21 +26,30 @@ export default function PayslipsScreen() {
     if (role) {
       loadPayslips();
     }
-  }, [year, role]);
+  }, [year, month, role]);
 
   const loadPayslips = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = role === 'ADMIN' 
-        ? await getAllPayslips(year, 0) // Backend probably ignores month 0 or gets all for the year
-        : await getMyPayslips(year);
+      const data = ['ADMIN', 'SUPERADMIN', 'HM'].includes(role)
+        ? await getAllPayslips(year, month)
+        : await getMyPayslips(year, month);
       setPayslips(data || []);
     } catch (e: any) {
       setError(e.response?.data?.detail || e.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
+  };
+
+  const prevMonth = () => {
+    if (month === 1) { setMonth(12); setYear(y => y - 1); }
+    else setMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (month === 12) { setMonth(1); setYear(y => y + 1); }
+    else setMonth(m => m + 1);
   };
 
   const toggleDetail = async (payslip: any) => {
@@ -62,13 +72,13 @@ export default function PayslipsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Year Selector */}
+      {/* Month & Year Selector */}
       <View style={styles.yearSelector}>
-        <TouchableOpacity onPress={() => setYear(y => y - 1)} style={styles.arrowBtn}>
+        <TouchableOpacity onPress={prevMonth} style={styles.arrowBtn}>
           <Text style={styles.arrowText}>◀</Text>
         </TouchableOpacity>
-        <Text style={styles.yearTitle}>{year}</Text>
-        <TouchableOpacity onPress={() => setYear(y => y + 1)} style={styles.arrowBtn}>
+        <Text style={styles.yearTitle}>{monthNames[month - 1]} {year}</Text>
+        <TouchableOpacity onPress={nextMonth} style={styles.arrowBtn}>
           <Text style={styles.arrowText}>▶</Text>
         </TouchableOpacity>
       </View>
@@ -87,7 +97,7 @@ export default function PayslipsScreen() {
           <Text style={styles.emptyText}>No finalized payslips for {year}</Text>
         </View>
       ) : (
-        <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} style={styles.listContainer} showsVerticalScrollIndicator={false}>
           {payslips.map((p: any) => {
             const d = new Date(p.period_start);
             const periodName = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
@@ -102,7 +112,12 @@ export default function PayslipsScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.payslipHeader}>
-                    <View>
+                    <View style={{ flex: 1, paddingRight: 10 }}>
+                      {['ADMIN', 'SUPERADMIN', 'HM'].includes(role) && (
+                        <Text style={[styles.periodText, { color: '#3b82f6', marginBottom: 2 }]} numberOfLines={2}>
+                          {p.employee_name || 'Unknown Employee'}
+                        </Text>
+                      )}
                       <Text style={styles.periodText}>{periodName}</Text>
                       <View style={styles.finalBadge}>
                         <Text style={styles.finalBadgeText}>FINALIZED</Text>

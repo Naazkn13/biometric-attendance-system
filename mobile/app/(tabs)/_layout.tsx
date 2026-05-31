@@ -81,9 +81,31 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="corrections"
         options={{
           href: null,
+          title: 'Corrections',
+        }}
+      />
+      <Tabs.Screen
+        name="employees"
+        options={{
+          href: null,
+          title: 'Employees',
+        }}
+      />
+      <Tabs.Screen
+        name="holidays"
+        options={{
+          href: null,
+          title: 'Holidays',
+        }}
+      />
+      <Tabs.Screen
+        name="shifts"
+        options={{
+          href: null,
+          title: 'Shifts',
         }}
       />
     </Tabs>

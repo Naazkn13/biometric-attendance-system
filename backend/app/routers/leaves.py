@@ -35,7 +35,7 @@ class LeaveRejectRequest(BaseModel):
 @router.post("/apply")
 async def apply_leave(
     req: LeaveApplyRequest,
-    current_user: dict = Depends(require_role(["EMPLOYEE"]))
+    current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))
 ):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
@@ -112,7 +112,7 @@ async def apply_leave(
 async def get_my_leaves(
     year: Optional[int] = None,
     month: Optional[int] = None,
-    current_user: dict = Depends(require_role(["EMPLOYEE"]))
+    current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))
 ):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")
@@ -137,7 +137,7 @@ async def get_my_leaves(
 async def get_my_balance(
     year: int = Query(..., description="Year"),
     month: int = Query(..., description="Month"),
-    current_user: dict = Depends(require_role(["EMPLOYEE"]))
+    current_user: dict = Depends(require_role(["EMPLOYEE", "ADMIN", "SUPERADMIN", "HM"]))
 ):
     supabase = get_supabase()
     employee_id = current_user.get("employee_id")

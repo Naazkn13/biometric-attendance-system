@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } fr
 import * as DocumentPicker from 'expo-document-picker';
 import { uploadSyncFile, getMyProfile } from '../../services/api';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 export default function AdminSyncScreen() {
   const [loading, setLoading] = useState(false);
@@ -14,12 +15,12 @@ export default function AdminSyncScreen() {
 
   const checkAdmin = async () => {
     try {
-      const profile = await getMyProfile();
-      if (profile.role !== 'ADMIN') {
+      const userRole = await SecureStore.getItemAsync('userRole');
+      if (['ADMIN', 'SUPERADMIN', 'HM'].includes(userRole || '')) {
+        setIsAdmin(true);
+      } else {
         Alert.alert('Unauthorized', 'You do not have permission to view this screen.');
         router.replace('/(tabs)');
-      } else {
-        setIsAdmin(true);
       }
     } catch (e) {
       router.replace('/login');

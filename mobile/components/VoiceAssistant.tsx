@@ -35,7 +35,7 @@ export default function VoiceAssistant() {
       const role = await SecureStore.getItemAsync('userRole');
 
       if (parsed.intent === 'APPROVE_LEAVE') {
-        if (role !== 'ADMIN' && role !== 'SUPERADMIN') {
+        if (role !== 'ADMIN' && role !== 'SUPERADMIN' && role !== 'HM') {
           speechResult = "You don't have permission to approve leaves.";
         } else {
           // Fetch pending leaves and approve the first one as an example
@@ -50,7 +50,39 @@ export default function VoiceAssistant() {
           }
         }
       } else if (parsed.intent === 'APPLY_LEAVE') {
-         speechResult = "Please use the form in the Leaves tab to select your dates.";
+         // Try to extract date
+         const lowerText = text.toLowerCase();
+         const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+         const shortMonths = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+         
+         let targetMonth = -1;
+         let targetDay = -1;
+         
+         monthNames.forEach((m, idx) => { if (lowerText.includes(m)) targetMonth = idx; });
+         if (targetMonth === -1) {
+           shortMonths.forEach((m, idx) => { if (lowerText.includes(m)) targetMonth = idx; });
+         }
+         
+         const dayMatch = lowerText.match(/\b([1-9]|[12]\d|3[01])(st|nd|rd|th)?\b/);
+         if (dayMatch) {
+           targetDay = parseInt(dayMatch[1]);
+         }
+         
+         if (targetMonth !== -1 && targetDay !== -1) {
+           const year = new Date().getFullYear();
+           const dateStr = `${year}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+           try {
+             await applyLeave({ leave_date: dateStr, leave_type: 'CASUAL', reason: 'Applied via voice' });
+             speechResult = `Leave applied successfully for ${targetDay} ${monthNames[targetMonth]}.`;
+             actionTaken = { action: 'apply_leave', leave_date: dateStr };
+           } catch (e: any) {
+             let errDetail = e.response?.data?.detail;
+             if (Array.isArray(errDetail)) errDetail = "Validation error";
+             speechResult = "Sorry, I could not apply leave. " + (errDetail || e.message || "");
+           }
+         } else {
+           speechResult = "Please specify the date clearly, like 'Apply leave for 1 June'.";
+         }
       } else {
         speechResult = "I didn't understand that command.";
       }
@@ -108,7 +140,7 @@ export default function VoiceAssistant() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 90, // moved up to prevent overlapping with bottom tabs
     right: 20,
     alignItems: 'flex-end',
     zIndex: 9999,

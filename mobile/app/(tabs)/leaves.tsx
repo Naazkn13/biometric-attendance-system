@@ -28,7 +28,7 @@ export default function LeavesScreen() {
     setLoading(true);
     setError(null);
     try {
-      const data = currentRole === 'ADMIN' 
+      const data = ['ADMIN', 'SUPERADMIN', 'HM'].includes(currentRole)
         ? await getPendingLeaves()
         : await getMyLeaves();
       setLeaves(data || []);
@@ -153,16 +153,16 @@ export default function LeavesScreen() {
         <View style={styles.center}>
           <Text style={{ fontSize: 32, marginBottom: 8 }}>🏖️</Text>
           <Text style={styles.emptyText}>
-            {role === 'ADMIN' ? 'No pending leave requests' : 'No leave history'}
+            {['ADMIN', 'SUPERADMIN', 'HM'].includes(role) ? 'No pending leave requests' : 'No leave history'}
           </Text>
         </View>
       ) : (
-        <ScrollView style={styles.listContainer}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} style={styles.listContainer} showsVerticalScrollIndicator={false}>
           {leaves.map((leave: any) => (
             <View key={leave.id} style={styles.leaveCard}>
               <View style={styles.leaveHeader}>
                 <View>
-                  {role === 'ADMIN' && leave.employees && (
+                  {['ADMIN', 'SUPERADMIN', 'HM'].includes(role) && leave.employees && (
                     <Text style={styles.empName}>{leave.employees.name}</Text>
                   )}
                   <Text style={styles.dateText}>
@@ -177,7 +177,7 @@ export default function LeavesScreen() {
               
               <Text style={styles.reasonText}>{leave.reason}</Text>
 
-              {role === 'ADMIN' && leave.status === 'PENDING' && (
+              {['ADMIN', 'SUPERADMIN', 'HM'].includes(role) && leave.status === 'PENDING' && (
                 <View style={styles.adminActions}>
                   <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApprove(leave.id)}>
                     <Text style={styles.actionBtnText}>Approve</Text>
