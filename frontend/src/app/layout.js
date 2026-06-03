@@ -22,7 +22,7 @@ const navItems = [
   { label: 'Manual Sync', href: '/sync', icon: '💾', section: 'System' },
 ];
 
-function Sidebar() {
+function Sidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
 
   const sections = {};
@@ -32,7 +32,11 @@ function Sidebar() {
   });
 
   return (
-    <aside className="sidebar">
+    <aside 
+      className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}
+      onMouseEnter={() => setIsCollapsed(false)}
+      onMouseLeave={() => setIsCollapsed(true)}
+    >
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">⏱️</div>
@@ -53,7 +57,7 @@ function Sidebar() {
                 className={`nav-item ${pathname === item.href ? 'active' : ''}`}
               >
                 <span className="nav-icon">{item.icon}</span>
-                {item.label}
+                <span className="nav-label">{item.label}</span>
               </Link>
             ))}
           </div>
@@ -67,10 +71,11 @@ function Sidebar() {
             padding: '10px 12px', fontSize: '14px', fontWeight: 500, color: 'var(--error)',
             background: 'var(--error-bg)', border: '1px solid rgba(239,68,68,0.15)',
             borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'inherit',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease', whiteSpace: 'nowrap'
           }}
         >
-          <span>🚪</span> Logout
+          <span className="nav-icon" style={{ width: '24px', textAlign: 'center' }}>🚪</span> 
+          <span className="nav-label">Logout</span>
         </button>
       </div>
     </aside>
@@ -81,6 +86,7 @@ export default function RootLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   // IMPORTANT: use strict check — only /employee/ routes (with trailing slash or subpath)
   // are employee portal routes. /employees is an admin route.
@@ -144,8 +150,8 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <div className="app-layout">
-          <Sidebar />
-          <main className="main-content">
+          <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+          <main className={`main-content ${isCollapsed ? 'expanded' : ''}`}>
             {children}
           </main>
         </div>

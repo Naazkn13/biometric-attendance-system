@@ -154,7 +154,7 @@ async def get_payslip(
             "pt_deduction": calc.get("pt_deduction", 200),
             "salary_cut": payroll.get("salary_cut"),
             "final_salary": payroll.get("final_salary"),
-            "total_before_pt": calc.get("total_day_salary", 0) + payroll.get("overtime_pay", 0),
+            "total_before_pt": calc.get("total_day_salary", 0) + payroll.get("overtime_pay", 0) + calc.get("pl_adjustment", 0) + calc.get("conveyance", 0),
         },
         "daily_breakdown": calc.get("daily_breakdown", []),
         "warnings": calc.get("warnings", []),

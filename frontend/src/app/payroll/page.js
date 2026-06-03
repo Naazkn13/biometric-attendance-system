@@ -10,6 +10,10 @@ export default function PayrollPage() {
     const [selectedPayroll, setSelectedPayroll] = useState(null);
     const [showCalcModal, setShowCalcModal] = useState(false);
     const [calcForm, setCalcForm] = useState({ employee_id: '', period_start: '', period_end: '' });
+    
+    const currentDate = new Date();
+    const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
     const loadData = async () => {
         try {
@@ -76,6 +80,13 @@ export default function PayrollPage() {
 
     if (loading) return <div className="loading"><div className="spinner" /> Loading...</div>;
 
+    const filteredPayrolls = payrolls.filter(p => {
+        if (!p.period_start) return true;
+        const monthStr = selectedMonth.toString().padStart(2, '0');
+        const prefix = `${selectedYear}-${monthStr}`;
+        return p.period_start.startsWith(prefix);
+    });
+
     return (
         <div>
             <div className="page-header">
@@ -83,15 +94,28 @@ export default function PayrollPage() {
                     <h1>Payroll</h1>
                     <p>Calculate, review, and finalize monthly payroll</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowCalcModal(true)}>💰 Calculate Payroll</button>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <select className="form-select" value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={{ width: '130px' }}>
+                        {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                            <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
+                        ))}
+                    </select>
+                    <select className="form-select" value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} style={{ width: '100px' }}>
+                        {[...Array(5)].map((_, i) => {
+                            const y = currentDate.getFullYear() - 2 + i;
+                            return <option key={y} value={y}>{y}</option>;
+                        })}
+                    </select>
+                    <button className="btn btn-primary" onClick={() => setShowCalcModal(true)}>💰 Calculate Payroll</button>
+                </div>
             </div>
 
             {/* Payroll Records */}
             <div className="table-container">
                 <div className="table-header">
-                    <h2>Payroll Records ({payrolls.length})</h2>
+                    <h2>Payroll Records ({filteredPayrolls.length})</h2>
                 </div>
-                {payrolls.length > 0 ? (
+                {filteredPayrolls.length > 0 ? (
                     <table>
                         <thead>
                             <tr>
@@ -110,7 +134,7 @@ export default function PayrollPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {payrolls.map((p) => (
+                            {filteredPayrolls.map((p) => (
                                 <tr key={p.id}>
                                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.employee_name || p.employee_id?.slice(0, 8)}</td>
                                     <td>{p.period_start} — {p.period_end}</td>
