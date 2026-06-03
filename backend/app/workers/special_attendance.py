@@ -34,11 +34,28 @@ async def run_special_attendance(target_date: date = None):
     target_date_str = target_date.isoformat()
     
     try:
-        # Check if it was a holiday
+        # Check if the target date is a holiday
         calendar_day = db.table("calendar_days").select("*").eq("date", target_date_str).execute()
-        if calendar_day.data and calendar_day.data[0].get("is_holiday") or calendar_day.data and calendar_day.data[0].get("day_type") == "HOLIDAY":
+        is_today_holiday = False
+        if calendar_day.data:
+            day_record = calendar_day.data[0]
+            if day_record.get("is_holiday") or day_record.get("day_type") == "HOLIDAY":
+                is_today_holiday = True
+                
+        if is_today_holiday:
             logger.info(f"Special Attendance: Skipping {target_date}, it was a holiday.")
             return
+            
+        # If today is Thursday, also check if the preceding Monday was a holiday
+        if weekday == 3: # Thursday
+            monday_date = target_date - timedelta(days=3)
+            monday_str = monday_date.isoformat()
+            monday_res = db.table("calendar_days").select("*").eq("date", monday_str).execute()
+            if monday_res.data:
+                mon_record = monday_res.data[0]
+                if mon_record.get("is_holiday") or mon_record.get("day_type") == "HOLIDAY":
+                    logger.info(f"Special Attendance: Skipping Thursday {target_date}, because preceding Monday ({monday_str}) was a holiday.")
+                    return
             
         # Get Shabnam and Asifa
         employees_res = db.table("employees").select("*").execute()
