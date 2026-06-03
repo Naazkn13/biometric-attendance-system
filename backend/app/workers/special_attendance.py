@@ -75,7 +75,7 @@ async def run_special_attendance(target_date: date = None):
             name_lower = emp.get("name", "").lower()
             if 'shabnam' in name_lower:
                 check_in_dt = ist.localize(datetime.combine(target_date, time(9, 0)))
-                check_out_dt = ist.localize(datetime.combine(target_date, time(17, 0)))
+                check_out_dt = ist.localize(datetime.combine(target_date, time(17, 30)))
             elif 'asifa' in name_lower:
                 check_in_dt = ist.localize(datetime.combine(target_date, time(9, 30)))
                 check_out_dt = ist.localize(datetime.combine(target_date, time(17, 30)))
@@ -83,6 +83,10 @@ async def run_special_attendance(target_date: date = None):
                 continue
                 
             emp_id = emp["id"]
+            
+            # Dynamically calculate hours
+            delta = check_out_dt - check_in_dt
+            hours = round(delta.total_seconds() / 3600.0, 2)
             
             # Check if session exists
             existing_res = db.table("attendance_sessions").select("*").eq("employee_id", emp_id).eq("session_date", target_date_str).execute()
@@ -92,8 +96,8 @@ async def run_special_attendance(target_date: date = None):
                 "session_date": target_date_str,
                 "punch_in_time": check_in_dt.isoformat(),
                 "punch_out_time": check_out_dt.isoformat(),
-                "gross_hours": 8.0,
-                "net_hours": 8.0,
+                "gross_hours": hours,
+                "net_hours": hours,
                 "status": "COMPLETE",
                 "has_override": True,
                 "updated_at": datetime.utcnow().isoformat()
