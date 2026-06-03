@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.104:8000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.184:8000';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -82,11 +82,8 @@ export const getTodayAttendance = async () => {
   return response.data;
 };
 
-export const getAttendanceSessions = async (year: number, month: number) => {
-  const date_from = `${year}-${String(month).padStart(2, '0')}-01`;
-  const lastDay = new Date(year, month, 0).getDate();
-  const date_to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-  const response = await api.get('/api/attendance/sessions', { params: { date_from, date_to } });
+export const getAttendanceSessions = async (filters: { date_from?: string, date_to?: string, status?: string }) => {
+  const response = await api.get('/api/attendance/sessions', { params: filters });
   return response.data;
 };
 
@@ -142,9 +139,40 @@ export const deactivateOverride = async (overrideId: string) => {
   return response.data;
 };
 
+export const getCorrectionLog = async () => {
+  const response = await api.get('/api/overrides/log');
+  return response.data;
+};
+
 // ── Holidays ──
 export const getHolidays = async () => {
   const response = await api.get('/api/holidays/all');
+  return response.data;
+};
+
+export const createHoliday = async (payload: { date: string, description: string }) => {
+  const response = await api.post('/api/holidays', payload);
+  return response.data;
+};
+
+export const updateHoliday = async (dateStr: string, payload: { description: string }) => {
+  const response = await api.put(`/api/holidays/${dateStr}`, payload);
+  return response.data;
+};
+
+export const deleteHoliday = async (dateStr: string) => {
+  const response = await api.delete(`/api/holidays/${dateStr}`);
+  return response.data;
+};
+
+// ── Attendance Triggers ──
+export const triggerSessionBuilder = async () => {
+  const response = await api.post('/api/attendance/trigger-session-builder');
+  return response.data;
+};
+
+export const triggerAutoCheckout = async () => {
+  const response = await api.post('/api/attendance/trigger-auto-checkout');
   return response.data;
 };
 

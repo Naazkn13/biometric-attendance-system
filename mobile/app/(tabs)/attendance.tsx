@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { getMyAttendance, getAttendanceSessions } from '../../services/api';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { getMyAttendance, getAttendanceSessions, triggerSessionBuilder, triggerAutoCheckout } from '../../services/api';
 import * as SecureStore from 'expo-secure-store';
 
 const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9,33 +9,76 @@ export default function AttendanceScreen() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  
+  // Admin Filters
+  const [dateFrom, setDateFrom] = useState(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
+  const [dateTo, setDateTo] = useState(now.toISOString().split('T')[0]);
+  const [statusFilter, setStatusFilter] = useState('');
+  
+  const formatDateInput = (text: string, setter: (val: string) => void) => {
+    let val = text.replace(/\D/g, '');
+    if (val.length > 8) val = val.substring(0, 8);
+    if (val.length > 4) val = val.substring(0, 4) + '-' + val.substring(4);
+    if (val.length > 7) val = val.substring(0, 7) + '-' + val.substring(7);
+    setter(val);
+  };
+  
   const [attendance, setAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<string>('EMPLOYEE');
+  const [role, setRole] = useState<string>('');
+  const [roleLoaded, setRoleLoaded] = useState(false);
 
   useEffect(() => {
-    SecureStore.getItemAsync('userRole').then(r => setRole(r || 'EMPLOYEE'));
+    SecureStore.getItemAsync('userRole').then(r => {
+      setRole(r || 'EMPLOYEE');
+      setRoleLoaded(true);
+    });
   }, []);
 
+  const isAdmin = ['ADMIN', 'SUPERADMIN', 'HM'].includes(role);
+
   useEffect(() => {
-    if (role) {
+    if (roleLoaded) {
       loadAttendance();
     }
-  }, [year, month, role]);
+  }, [year, month, roleLoaded, dateFrom, dateTo, statusFilter]);
 
   const loadAttendance = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = ['ADMIN', 'SUPERADMIN', 'HM'].includes(role)
-        ? await getAttendanceSessions(year, month)
-        : await getMyAttendance(year, month);
-      setAttendance(data || []);
+      if (isAdmin) {
+        const data = await getAttendanceSessions({ date_from: dateFrom, date_to: dateTo, status: statusFilter || undefined });
+        setAttendance(data || []);
+      } else {
+        const data = await getMyAttendance(year, month);
+        setAttendance(data || []);
+      }
     } catch (e: any) {
       setError(e.response?.data?.detail || e.message || 'Failed to load');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTriggerBuilder = async () => {
+    try {
+      await triggerSessionBuilder();
+      Alert.alert('Success', 'Session Builder triggered.');
+      loadAttendance();
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.detail || e.message);
+    }
+  };
+
+  const handleTriggerCheckout = async () => {
+    try {
+      await triggerAutoCheckout();
+      Alert.alert('Success', 'Auto Checkout triggered.');
+      loadAttendance();
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.detail || e.message);
     }
   };
 
@@ -62,20 +105,57 @@ export default function AttendanceScreen() {
     }
   };
 
-  const isAdmin = ['ADMIN', 'SUPERADMIN', 'HM'].includes(role);
-
   return (
     <View style={styles.container}>
-      {/* Month Selector */}
-      <View style={styles.monthSelector}>
-        <TouchableOpacity onPress={prevMonth} style={styles.arrowBtn}>
-          <Text style={styles.arrowText}>◀</Text>
-        </TouchableOpacity>
-        <Text style={styles.monthTitle}>{monthNames[month - 1]} {year}</Text>
-        <TouchableOpacity onPress={nextMonth} style={styles.arrowBtn}>
-          <Text style={styles.arrowText}>▶</Text>
-        </TouchableOpacity>
-      </View>
+      {isAdmin ? (
+        <View style={styles.adminFilters}>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleTriggerBuilder}>
+              <Text style={styles.actionBtnText}>▶ Run Builder</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleTriggerCheckout}>
+              <Text style={styles.actionBtnText}>⏰ Auto Checkout</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.filterLabel}>From Date</Text>
+              <TextInput 
+                style={styles.filterInput} 
+                value={dateFrom} 
+                onChangeText={(text) => formatDateInput(text, setDateFrom)} 
+                placeholder="YYYY-MM-DD" 
+                keyboardType="numeric"
+                maxLength={10}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.filterLabel}>To Date</Text>
+              <TextInput 
+                style={styles.filterInput} 
+                value={dateTo} 
+                onChangeText={(text) => formatDateInput(text, setDateTo)} 
+                placeholder="YYYY-MM-DD" 
+                keyboardType="numeric"
+                maxLength={10}
+              />
+            </View>
+            <TouchableOpacity style={styles.filterSubmitBtn} onPress={loadAttendance}>
+              <Text style={styles.filterSubmitText}>Filter</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.monthSelector}>
+          <TouchableOpacity onPress={prevMonth} style={styles.arrowBtn}>
+            <Text style={styles.arrowText}>◀</Text>
+          </TouchableOpacity>
+          <Text style={styles.monthTitle}>{monthNames[month - 1]} {year}</Text>
+          <TouchableOpacity onPress={nextMonth} style={styles.arrowBtn}>
+            <Text style={styles.arrowText}>▶</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Summary */}
       {!loading && !error && (
@@ -119,6 +199,7 @@ export default function AttendanceScreen() {
                 <Text style={[styles.headerCell, { flex: 1.5 }]}>In</Text>
                 <Text style={[styles.headerCell, { flex: 1.5 }]}>Out</Text>
                 <Text style={[styles.headerCell, { flex: 1, textAlign: 'right' }]}>Hrs</Text>
+                {!isAdmin && <Text style={[styles.headerCell, { flex: 1.5, textAlign: 'right' }]}>Day Pay</Text>}
                 <Text style={[styles.headerCell, { flex: 1, textAlign: 'center' }]}>Stat</Text>
               </View>
               {attendance.map((session: any) => {
@@ -126,6 +207,9 @@ export default function AttendanceScreen() {
                 const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 const dayNum = dateObj.getDate();
                 const badge = getStatusStyle(session.status);
+                
+                const basicSalary = session.employees?.basic_salary || 0;
+                const dayPay = session.net_hours > 0 ? (basicSalary / 30).toFixed(2) : '0.00';
                 
                 return (
                   <View key={session.id} style={styles.tableRow}>
@@ -142,6 +226,11 @@ export default function AttendanceScreen() {
                     <Text style={[styles.hoursText, { flex: 1, textAlign: 'right', color: session.net_hours > 0 ? '#16a34a' : '#94a3b8' }]}>
                       {session.net_hours || 0}h
                     </Text>
+                    {!isAdmin && (
+                      <Text style={[styles.timeText, { flex: 1.5, textAlign: 'right', color: session.net_hours > 0 ? '#16a34a' : '#94a3b8', fontWeight: '700' }]}>
+                        ₹{dayPay}
+                      </Text>
+                    )}
                     <View style={{ flex: 1, alignItems: 'center' }}>
                       <Text style={[styles.statusText, { color: badge.text }]}>
                         {session.status === 'COMPLETE' ? '✓' : session.status === 'MISSING_OUT' ? 'X' : '!'}
@@ -288,5 +377,51 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  adminFilters: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  actionBtn: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionBtnText: {
+    color: '#3b82f6',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  filterLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748b',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  filterInput: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 6,
+    padding: 8,
+    fontSize: 13,
+  },
+  filterSubmitBtn: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterSubmitText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });
