@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { getPayrollRecords, calculateAllPayroll, finalizePayroll } from '../../services/api';
+import { getPayrollRecords, calculateAllPayroll, calculateEmployeePayroll, finalizePayroll } from '../../services/api';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -54,6 +54,34 @@ export default function PayrollScreen() {
               await calculateAllPayroll(dateFrom, dateTo);
               await loadRecords();
               Alert.alert('Done', 'Payroll calculated successfully.');
+            } catch (e: any) {
+              Alert.alert('Error', e.response?.data?.detail || 'Calculation failed');
+            } finally {
+              setActioning(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCalculateOne = (rec: any) => {
+    const name = rec.employee_name || 'this employee';
+    Alert.alert(
+      'Recalculate Payroll',
+      `Recalculate payroll for ${name} for ${MONTHS[month - 1]} ${year}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Calculate', onPress: async () => {
+            setActioning(true);
+            try {
+              const dateFrom = `${year}-${pad(month)}-01`;
+              const lastDay = new Date(year, month, 0).getDate();
+              const dateTo = `${year}-${pad(month)}-${pad(lastDay)}`;
+              await calculateEmployeePayroll(rec.employee_id, dateFrom, dateTo);
+              await loadRecords();
+              Alert.alert('Done', `Payroll recalculated for ${name}.`);
             } catch (e: any) {
               Alert.alert('Error', e.response?.data?.detail || 'Calculation failed');
             } finally {
@@ -180,10 +208,10 @@ export default function PayrollScreen() {
             <View key={rec.id} style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{(rec.employees?.name || 'U').charAt(0).toUpperCase()}</Text>
+                  <Text style={styles.avatarText}>{(rec.employee_name || 'U').charAt(0).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.empName}>{rec.employees?.name || 'Unknown'}</Text>
+                  <Text style={styles.empName}>{rec.employee_name || '—'}</Text>
                   <Text style={styles.period}>{periodLabel(rec.period_start)}</Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: rec.status === 'FINAL' ? '#dcfce7' : '#fef9c3' }]}>
@@ -209,6 +237,14 @@ export default function PayrollScreen() {
                   </Text>
                 </View>
               </View>
+              <TouchableOpacity
+                style={styles.recalcBtn}
+                onPress={() => handleCalculateOne(rec)}
+                disabled={actioning}
+              >
+                <FontAwesome name="refresh" size={11} color="#6366f1" />
+                <Text style={styles.recalcBtnText}>Recalculate</Text>
+              </TouchableOpacity>
             </View>
           ))}
 
@@ -277,4 +313,11 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 15, color: '#94a3b8', fontWeight: '500' },
   emptyHint: { fontSize: 12, color: '#cbd5e1' },
+  recalcBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginTop: 10, alignSelf: 'flex-end',
+    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: '#eef2ff', borderRadius: 8,
+  },
+  recalcBtnText: { fontSize: 11, color: '#6366f1', fontWeight: '700' },
 });

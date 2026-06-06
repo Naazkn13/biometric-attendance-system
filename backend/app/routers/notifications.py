@@ -23,13 +23,13 @@ async def get_pending_notifications(
     limit: int = Query(20, ge=1, le=100),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get unread notifications for the current user."""
+    """Get notifications not yet spoken aloud by Whispr (for TTS polling)."""
     supabase = get_supabase()
     response = (
         supabase.table("notifications")
         .select("*")
         .eq("target_user_id", current_user["id"])
-        .eq("is_read", False)
+        .eq("is_spoken", False)
         .order("created_at", desc=True)
         .limit(limit)
         .execute()
@@ -58,7 +58,7 @@ async def get_all_notifications(
 
 @router.get("/unread-count")
 async def get_unread_count(current_user: dict = Depends(get_current_user)):
-    """Get the count of unread notifications for badge display."""
+    """Get the count of notifications not yet read by the user (badge display)."""
     supabase = get_supabase()
     response = (
         supabase.table("notifications")
@@ -128,7 +128,7 @@ async def mark_notification_spoken(
 
     result = (
         supabase.table("notifications")
-        .update({"is_spoken": True, "is_read": True})
+        .update({"is_spoken": True})
         .eq("id", notification_id)
         .execute()
     )

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { Image, View } from 'react-native';
+import { Image, View, Text } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { getUnreadCount } from '../../services/api';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -28,9 +29,19 @@ function LogoHeader() {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [role, setRole] = useState<string>('EMPLOYEE');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     SecureStore.getItemAsync('userRole').then(r => setRole(r || 'EMPLOYEE'));
+  }, []);
+
+  useEffect(() => {
+    const poll = async () => {
+      try { setUnreadCount(await getUnreadCount()); } catch { /* silent */ }
+    };
+    poll();
+    const id = setInterval(poll, 30000);
+    return () => clearInterval(id);
   }, []);
 
   return (
@@ -70,6 +81,29 @@ export default function TabLayout() {
           title: 'Payslips',
           tabBarIcon: ({ color }) => <TabBarIcon name="money" color={color} />,
           // Both Admin and Employee have a Payslips screen
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color }) => (
+            <View>
+              <TabBarIcon name="bell" color={color} />
+              {unreadCount > 0 && (
+                <View style={{
+                  position: 'absolute', top: -4, right: -6,
+                  backgroundColor: '#ef4444', borderRadius: 8,
+                  minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
+                  paddingHorizontal: 3,
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ),
         }}
       />
       <Tabs.Screen

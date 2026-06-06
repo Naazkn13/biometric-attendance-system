@@ -204,9 +204,39 @@ export const calculateAllPayroll = async (periodStart: string, periodEnd: string
   return response.data;
 };
 
+export const calculateEmployeePayroll = async (employeeId: string, periodStart: string, periodEnd: string) => {
+  const response = await api.post('/api/payroll/calculate', {
+    employee_id: employeeId,
+    period_start: periodStart,
+    period_end: periodEnd,
+  });
+  return response.data;
+};
+
 export const finalizePayroll = async (payrollIds: string[]) => {
   const response = await api.post('/api/payroll/finalize', { payroll_ids: payrollIds });
   return response.data;
+};
+
+// ── Notifications ──
+export const getNotifications = async () => {
+  const response = await api.get('/api/notifications/all', { params: { limit: 50 } });
+  return response.data;
+};
+
+export const markNotificationRead = async (notificationId: string) => {
+  const response = await api.post(`/api/notifications/${notificationId}/mark-read`);
+  return response.data;
+};
+
+export const markAllNotificationsRead = async () => {
+  const response = await api.post('/api/notifications/mark-all-read');
+  return response.data;
+};
+
+export const getUnreadCount = async () => {
+  const response = await api.get('/api/notifications/unread-count');
+  return response.data.unread_count as number;
 };
 
 // ── Users / Access ──
