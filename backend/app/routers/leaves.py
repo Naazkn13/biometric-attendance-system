@@ -11,8 +11,13 @@ from app.services.notification_service import (
     notify_admins_leave_request,
     notify_employee_leave_approved,
     notify_employee_leave_rejected,
+    notify_all_employees_leave_approved,
 )
-from app.services.push_service import send_push_to_admins, send_push_to_user
+from app.services.push_service import (
+    send_push_to_admins,
+    send_push_to_user,
+    send_push_to_all_active_employees,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,15 +97,18 @@ async def apply_leave(
     except Exception as exc:
         logger.error(f"Failed to notify admins: {exc}")
 
-    # Send push notification to admins (works even if app is closed)
+    # Send sticky push to admins with Approve / Reject action buttons
     try:
         from app.services.notification_service import _get_employee_name, _format_date_range_spoken
         name = _get_employee_name(employee_id)
         date_str = _format_date_range_spoken(leave_start, leave_end)
         send_push_to_admins(
             title=f"Leave request from {name}",
-            body=f"{name} has requested leave for {date_str}",
+            body=f"{name} has requested leave for {date_str}. Approve or reject?",
             data={"type": "LEAVE_REQUEST", "leave_id": leave_record["id"]},
+            channel_id="leave_requests",
+            sticky=True,
+            category_identifier="LEAVE_REQUEST",
         )
     except Exception as exc:
         logger.error(f"Failed to send push to admins: {exc}")
@@ -295,6 +303,27 @@ async def approve_leave(
             )
     except Exception as exc:
         logger.error(f"Failed to send push to employee: {exc}")
+
+    # Broadcast to entire team so everyone's Whispr speaks "Asifa is on leave on 9th June"
+    try:
+        from app.services.notification_service import _get_employee_name
+        emp_name = _get_employee_name(employee_id)
+        notify_all_employees_leave_approved(
+            employee_name=emp_name,
+            leave_date=leave_date,
+            leave_end_date=leave_end_date if leave_end_date != leave_date else None,
+            leave_id=leave_id,
+        )
+        # Push notification to all employees too (badge + banner)
+        from app.services.notification_service import _format_date_range_spoken
+        date_str = _format_date_range_spoken(leave_date, leave_end_date)
+        send_push_to_all_active_employees(
+            title=f"{emp_name.split()[0]} is on leave",
+            body=f"{emp_name} is on leave on {date_str}.",
+            data={"type": "LEAVE_TEAM_BROADCAST", "leave_id": leave_id},
+        )
+    except Exception as exc:
+        logger.error(f"Failed to broadcast leave approval to team: {exc}")
 
     return leave_record
 

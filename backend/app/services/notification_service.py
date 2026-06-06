@@ -97,6 +97,18 @@ def _get_user_id_for_employee(employee_id: str) -> Optional[str]:
     return None
 
 
+def _get_all_active_user_ids() -> List[str]:
+    """Get every active user ID (all roles) — used for team-wide broadcasts."""
+    supabase = get_supabase()
+    resp = (
+        supabase.table("users")
+        .select("id")
+        .eq("is_active", True)
+        .execute()
+    )
+    return [u["id"] for u in (resp.data or [])]
+
+
 def create_notification(
     target_user_id: str,
     notification_type: str,
@@ -219,3 +231,32 @@ def notify_employee_leave_rejected(
         related_entity_id=leave_id,
         related_entity_type="leave_request",
     )
+
+
+def notify_all_employees_leave_approved(
+    employee_name: str,
+    leave_date: date,
+    leave_end_date: Optional[date],
+    leave_id: str,
+) -> None:
+    """Broadcast a voice notification to EVERY active user when a leave is approved.
+
+    This lets the whole team know — spoken aloud by Whispr on each device —
+    so everyone plans accordingly (e.g. "Asifa is on leave on 9th June").
+    """
+    end = leave_end_date or leave_date
+    date_str = _format_date_range_spoken(leave_date, end)
+    first_name = employee_name.split()[0]
+
+    spoken = f"{first_name} is on leave on {date_str}. Please plan accordingly."
+    title = f"{first_name} is on leave"
+
+    for user_id in _get_all_active_user_ids():
+        create_notification(
+            target_user_id=user_id,
+            notification_type="LEAVE_TEAM_BROADCAST",
+            title=title,
+            spoken_message=spoken,
+            related_entity_id=leave_id,
+            related_entity_type="leave_request",
+        )

@@ -2,79 +2,75 @@ import { useState, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+import * as SecureStore from 'expo-secure-store';
+import { api } from '../services/api';
 
 export function usePushNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
-  const [notification, setNotification] = useState<Notifications.Notification | undefined>();
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
+    registerForPushNotificationsAsync().then(async (token) => {
+      if (!token) return;
+      setExpoPushToken(token);
 
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      setNotification(notification);
+      // Register this token with the backend so the server can push to this device.
+      // We fire-and-forget: if it fails the server just can't push to this device.
+      try {
+        const authToken = await SecureStore.getItemAsync('token');
+        if (authToken) {
+          await api.post('/api/notifications/register-token', {
+            fcm_token: token,
+            device_type: Platform.OS,
+          });
+        }
+      } catch {
+        // Not critical — app works without push
+      }
     });
 
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification tapped:', response);
+    notificationListener.current = Notifications.addNotificationReceivedListener(() => {
+      // Notification received while app is foregrounded.
+      // setNotificationHandler (in _layout.tsx) already controls display.
+      // No additional handling needed here.
     });
 
     return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
-      }
-      if (responseListener.current) {
-        responseListener.current.remove();
-      }
+      notificationListener.current?.remove();
     };
   }, []);
 
-  return { expoPushToken, notification };
+  return { expoPushToken };
 }
 
-async function registerForPushNotificationsAsync() {
-  let token;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
+async function registerForPushNotificationsAsync(): Promise<string | undefined> {
+  if (!Device.isDevice) {
+    console.log('Push notifications require a physical device');
+    return undefined;
   }
 
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return;
-    }
-    
-    // Uses the standard Expo Push Token format or FCM depending on project setup
-    token = (await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
-    })).data;
-    
-  } else {
-    console.log('Must use physical device for Push Notifications');
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
   }
 
-  return token;
+  if (finalStatus !== 'granted') {
+    console.log('Push notification permission denied');
+    return undefined;
+  }
+
+  try {
+    const token = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+      })
+    ).data;
+    return token;
+  } catch (e) {
+    console.log('Could not get push token:', e);
+    return undefined;
+  }
 }
