@@ -89,7 +89,23 @@ export default function EmployeeDashboard() {
               <Text style={styles.adminItemText}>Upload .dat</Text>
               <Text style={styles.adminItemHint}>USB sync module</Text>
             </TouchableOpacity>
-            <View style={[styles.adminItem, { opacity: 0 }]} />
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/devices' as any)}>
+              <FontAwesome name="desktop" size={28} color="#0ea5e9" />
+              <Text style={styles.adminItemText}>Devices</Text>
+              <Text style={styles.adminItemHint}>Device status</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.adminGrid, { marginTop: 16 }]}>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/payroll' as any)}>
+              <FontAwesome name="money" size={28} color="#22c55e" />
+              <Text style={styles.adminItemText}>Payroll</Text>
+              <Text style={styles.adminItemHint}>Calculate & finalize</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.adminItem} onPress={() => router.push('/users' as any)}>
+              <FontAwesome name="lock" size={28} color="#a855f7" />
+              <Text style={styles.adminItemText}>User Access</Text>
+              <Text style={styles.adminItemHint}>Passwords & admins</Text>
+            </TouchableOpacity>
           </View>
         </View>
 

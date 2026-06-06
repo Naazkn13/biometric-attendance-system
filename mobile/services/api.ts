@@ -176,6 +176,55 @@ export const triggerAutoCheckout = async () => {
   return response.data;
 };
 
+// ── Devices ──
+export const getDevices = async () => {
+  const response = await api.get('/api/devices');
+  return response.data;
+};
+
+export const toggleDevice = async (deviceId: string, isActive: boolean) => {
+  const response = await api.put(`/api/devices/${deviceId}`, { is_active: isActive });
+  return response.data;
+};
+
+// ── Payroll (Admin) ──
+export const getPayrollRecords = async (year: number, month: number) => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateFrom = `${year}-${pad(month)}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const dateTo = `${year}-${pad(month)}-${pad(lastDay)}`;
+  const response = await api.get('/api/payroll', { params: { period_start: dateFrom, period_end: dateTo } });
+  return response.data;
+};
+
+export const calculateAllPayroll = async (periodStart: string, periodEnd: string) => {
+  const response = await api.post('/api/payroll/calculate-all', null, {
+    params: { period_start: periodStart, period_end: periodEnd },
+  });
+  return response.data;
+};
+
+export const finalizePayroll = async (payrollIds: string[]) => {
+  const response = await api.post('/api/payroll/finalize', { payroll_ids: payrollIds });
+  return response.data;
+};
+
+// ── Users / Access ──
+export const getAdmins = async () => {
+  const response = await api.get('/api/users/admins');
+  return response.data;
+};
+
+export const createAdmin = async (username: string, password: string) => {
+  const response = await api.post('/api/users/admins', { username, password });
+  return response.data;
+};
+
+export const setEmployeePassword = async (employeeId: string, password: string) => {
+  const response = await api.post(`/api/users/employees/${employeeId}/set-password`, { password });
+  return response.data;
+};
+
 // ── Voice AI ──
 export const logVoiceInteraction = async (data: any) => {
   const response = await api.post('/api/voice/log', data);

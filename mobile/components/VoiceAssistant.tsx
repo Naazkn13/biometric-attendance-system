@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Text, ActivityIndicator } from 'rea
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import * as Speech from 'expo-speech';
-import { logVoiceInteraction, getPendingLeaves, approveLeave } from '../services/api';
+import { logVoiceInteraction, getPendingLeaves, approveLeave, applyLeave } from '../services/api';
 import * as SecureStore from 'expo-secure-store';
 
 export default function VoiceAssistant() {

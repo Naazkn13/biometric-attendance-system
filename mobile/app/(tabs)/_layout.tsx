@@ -108,6 +108,27 @@ export default function TabLayout() {
           title: 'Shifts',
         }}
       />
+      <Tabs.Screen
+        name="devices"
+        options={{
+          href: null,
+          title: 'Devices',
+        }}
+      />
+      <Tabs.Screen
+        name="payroll"
+        options={{
+          href: null,
+          title: 'Payroll',
+        }}
+      />
+      <Tabs.Screen
+        name="users"
+        options={{
+          href: null,
+          title: 'Users',
+        }}
+      />
     </Tabs>
   );
 }
