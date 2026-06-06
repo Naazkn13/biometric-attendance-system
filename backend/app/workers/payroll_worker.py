@@ -282,25 +282,28 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
                         day_details["is_unpaid_leave"] = True
                         day_details["total_hours"] = 0
                         day_details["day_salary"] = 0
-                        day_details["deficit_hours"] = float(shift_hours)
+                        day_details["deficit_hours"] = 0
                         day_details["total_day_pay"] = 0
-                        total_deficit += shift_hours
                 else:
                     # Normal absence
                     days_absent += 1
                     day_details["total_hours"] = 0
                     day_details["day_salary"] = 0
-                    day_details["deficit_hours"] = float(shift_hours)
+                    day_details["deficit_hours"] = 0
                     day_details["total_day_pay"] = 0
-                    total_deficit += shift_hours
 
         daily_breakdown.append(day_details)
         current += timedelta(days=1)
 
-    # Final salary computation
+    # Final salary computation (Top-Down based on fixed basic_salary)
     expected_hours = Decimal(str(working_days_count)) * shift_hours
     missing_hours = max(Decimal("0"), expected_hours - total_worked_hours)
-    salary_cut = basic_salary - total_day_salary  # implicit from proportional day salary
+    
+    lop_deduction = (Decimal(str(days_absent)) * per_day_salary).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    short_hours_deduction = (total_deficit * per_hour_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    salary_cut = lop_deduction + short_hours_deduction
+    
+    total_day_salary = max(Decimal("0"), basic_salary - salary_cut)
 
     # PL (Paid Leave) Adjustment — Unused Leave Encashment
     # Each employee is entitled to 1 paid leave per month.
