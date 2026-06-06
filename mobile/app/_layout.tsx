@@ -1,3 +1,4 @@
+import 'react-native-reanimated';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -6,7 +7,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
