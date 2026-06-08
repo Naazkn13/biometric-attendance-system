@@ -175,7 +175,7 @@ def poll_device(device_ip):
     logger.info("Connecting to device at {}:{}...".format(device_ip, DEVICE_PORT))
 
     zk = ZK(device_ip, port=DEVICE_PORT, timeout=10, password=0,
-            force_udp=True, ommit_ping=False)
+            force_udp=False, ommit_ping=False)
     conn = None
     try:
         conn = zk.connect()
