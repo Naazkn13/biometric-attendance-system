@@ -182,8 +182,22 @@ def poll_device(device_ip):
         logger.info("Connected to device! Firmware: {}".format(
             conn.get_firmware_version()))
 
-        # Pull all attendance records
-        attendance = conn.get_attendance()
+        # Lock the device so it allows data transfer (required for some older models)
+        try:
+            conn.disable_device()
+        except Exception as e:
+            logger.debug("Could not disable device (might not be supported): {}".format(e))
+
+        try:
+            # Pull all attendance records
+            attendance = conn.get_attendance()
+        finally:
+            # Always unlock the device afterwards
+            try:
+                conn.enable_device()
+            except Exception:
+                pass
+
         if not attendance:
             logger.info("No attendance records on device.")
             send_heartbeat()
