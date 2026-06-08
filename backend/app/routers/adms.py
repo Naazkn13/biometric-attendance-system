@@ -186,8 +186,16 @@ async def adms_get_request(
     """Respond to device polling for pending commands.
 
     The device periodically asks if there are any commands to execute
-    (like syncing time, restarting, etc.). For now, we return empty (no commands).
+    (like syncing time, restarting, etc.). This is also the device's
+    heartbeat — we update last_seen_at so we know it's still online.
     """
+    # Update last_seen_at — this is the device heartbeat
+    db = get_supabase()
+    db.table("devices").update({
+        "last_seen_at": datetime.utcnow().isoformat(),
+        "poll_status": "ok",
+    }).eq("device_sn", SN).execute()
+
     # No pending commands — return OK
     return Response(content="OK\r\n", media_type="text/plain")
 
