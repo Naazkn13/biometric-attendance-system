@@ -210,8 +210,12 @@ def poll_device(device_ip):
         if last_punch:
             new_punches = [p for p in attendance if p.timestamp > last_punch]
         else:
-            # First run — send all punches (Railway will deduplicate via UPSERT)
-            new_punches = attendance
+            # First run — only send punches from the beginning of this month
+            # (e.g. from June 1st onwards)
+            current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            new_punches = [p for p in attendance if p.timestamp >= current_month_start]
+            logger.info("First run: Filtered {} total records down to {} records from this month.".format(
+                len(attendance), len(new_punches)))
 
         if new_punches:
             logger.info("{} new punches to send.".format(len(new_punches)))
