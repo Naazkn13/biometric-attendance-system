@@ -103,15 +103,14 @@ async def run_special_attendance(target_date: date = None):
                 "updated_at": datetime.utcnow().isoformat()
             }
             
-            if existing_res.data:
-                # Update
-                session_id = existing_res.data[0]["id"]
-                db.table("attendance_sessions").update(session_data).eq("id", session_id).execute()
-                logger.info(f"Special Attendance: Updated session for {emp['name']} on {target_date_str}")
-            else:
-                # Insert
-                db.table("attendance_sessions").insert(session_data).execute()
-                logger.info(f"Special Attendance: Created session for {emp['name']} on {target_date_str}")
+            if not existing_res.data:
+                logger.info(f"Special Attendance: No punches found for {emp['name']} on {target_date_str}, leaving as absent.")
+                continue
+                
+            # Update the existing session
+            session_id = existing_res.data[0]["id"]
+            db.table("attendance_sessions").update(session_data).eq("id", session_id).execute()
+            logger.info(f"Special Attendance: Normalized existing session for {emp['name']} on {target_date_str}")
                 
             # Recalculate payroll
             period_start = target_date.replace(day=1)
