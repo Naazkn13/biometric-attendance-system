@@ -17,6 +17,10 @@ export default function LeavesScreen() {
   const [leaveType, setLeaveType] = useState('CASUAL');
   const [reason, setReason] = useState('');
 
+  // Admin Reject State
+  const [rejectingLeaveId, setRejectingLeaveId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
   useEffect(() => {
     SecureStore.getItemAsync('userRole').then(r => {
       setRole(r || 'EMPLOYEE');
@@ -74,10 +78,16 @@ export default function LeavesScreen() {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const submitReject = async (id: string) => {
+    if (!rejectReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for rejection');
+      return;
+    }
     try {
-      await rejectLeave(id, 'Rejected by Admin');
-      Alert.alert('Rejected', 'Leave request rejected');
+      await rejectLeave(id, rejectReason);
+      Alert.alert('Rejected', `Leave request rejected: ${rejectReason}`);
+      setRejectingLeaveId(null);
+      setRejectReason('');
       loadLeaves(role);
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.detail || 'Failed to reject');
@@ -179,12 +189,34 @@ export default function LeavesScreen() {
 
               {['ADMIN', 'SUPERADMIN', 'HM'].includes(role) && leave.status === 'PENDING' && (
                 <View style={styles.adminActions}>
-                  <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApprove(leave.id)}>
-                    <Text style={styles.actionBtnText}>Approve</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => handleReject(leave.id)}>
-                    <Text style={styles.actionBtnText}>Reject</Text>
-                  </TouchableOpacity>
+                  {rejectingLeaveId === leave.id ? (
+                    <View style={{ flex: 1 }}>
+                      <TextInput 
+                        style={[styles.input, { marginBottom: 8 }]} 
+                        placeholder="Rejection Reason" 
+                        value={rejectReason}
+                        onChangeText={setRejectReason}
+                        autoFocus
+                      />
+                      <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#64748b' }]} onPress={() => { setRejectingLeaveId(null); setRejectReason(''); }}>
+                          <Text style={styles.actionBtnText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => submitReject(leave.id)}>
+                          <Text style={styles.actionBtnText}>Confirm</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => handleApprove(leave.id)}>
+                        <Text style={styles.actionBtnText}>Approve</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]} onPress={() => setRejectingLeaveId(leave.id)}>
+                        <Text style={styles.actionBtnText}>Reject</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               )}
             </View>
