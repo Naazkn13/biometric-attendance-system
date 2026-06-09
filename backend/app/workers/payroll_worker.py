@@ -82,6 +82,19 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
     
     approved_leaves = {leave["leave_date"]: leave for leave in (leaves_result.data or [])}
 
+    # Fetch active MARK_ABSENT overrides for the period.
+    # When an admin explicitly marks a Sunday or holiday as absent, we honour
+    # that instruction and give zero pay for the day (no automatic paid-off credit).
+    absent_overrides_result = db.table("session_overrides") \
+        .select("session_date") \
+        .eq("employee_id", employee_id) \
+        .eq("override_type", "MARK_ABSENT") \
+        .eq("is_active", True) \
+        .gte("session_date", period_start.isoformat()) \
+        .lte("session_date", period_end.isoformat()) \
+        .execute()
+    admin_absent_dates = {r["session_date"] for r in (absent_overrides_result.data or [])}
+
     # Group sessions by date for daily calculation
     daily_data = {}
     for session in sessions:
@@ -151,7 +164,19 @@ async def calculate_payroll(employee_id: str, period_start: date, period_end: da
             "auto_checkout_uncorrected": False,
         }
 
-        if is_paid_off:
+        if is_paid_off and current_str in admin_absent_dates:
+            # ─── ADMIN-FORCED ABSENT on a Sunday / Holiday ───
+            # Admin explicitly marked this employee absent via correction.
+            # Override the paid-day-off rule: give zero salary and count as absent.
+            days_absent += 1
+            day_details["is_admin_absent"] = True
+            day_details["was_overridden"] = True
+            day_details["total_hours"] = 0
+            day_details["day_salary"] = 0
+            day_details["total_day_pay"] = 0
+            logger.info(f"Admin-forced absent on paid-off day {current_str}: zero salary applied")
+
+        elif is_paid_off:
             # ─── PAID DAY OFF (Sunday or Holiday) ───
             # Employee always gets per_day_salary for Sundays.
             # If they also worked, those hours are OVERTIME (extra).

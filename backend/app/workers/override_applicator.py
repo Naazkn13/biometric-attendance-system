@@ -144,15 +144,18 @@ async def _apply_override(db, employee_id: str, session_date: str):
     elif override_type == "MARK_ABSENT":
         update_data["net_hours"] = 0
         update_data["gross_hours"] = 0
+        update_data["status"] = "ABSENT"  # Exclude from payroll session query (only COMPLETE/AUTO_CHECKOUT/REOPENED are counted)
 
     elif override_type == "MARK_PRESENT":
         if override.get("override_net_hours"):
             update_data["net_hours"] = float(override["override_net_hours"])
             update_data["gross_hours"] = float(override["override_net_hours"])
+        update_data["status"] = "COMPLETE"  # Restore session so payroll counts it
 
     elif override_type == "OVERRIDE_HOURS":
         if override.get("override_net_hours"):
             update_data["net_hours"] = float(override["override_net_hours"])
+        update_data["status"] = "COMPLETE"  # Restore session so payroll counts it
 
     db.table("attendance_sessions").update(update_data).eq("id", session["id"]).execute()
     logger.info(f"Override applied: session={session['id']}, type={override_type}")
