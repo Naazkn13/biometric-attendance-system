@@ -1,5 +1,5 @@
 # Session Handoff
-Generated: 2026-05-21 14:34  |  Session: 4cfdeb6e-38ad-46d5-a080-5e69f0c5c54f
+Generated: 2026-06-13 11:10  |  Session: ac2ee988-ddbd-4ed5-954f-7a3667eb68c3
 
 ## What We Built
 Session data captured (AI compression unavailable: No module named 'anthropic')
@@ -13,10 +13,8 @@ Review the captured session data.
 ## Raw Session Data
 
 FILES TOUCHED:
-  /home/nuzhatkhan/biometric-attendance-system/frontend/src/app/corrections/page.js: import { useState, useEffect } from 'react';
+  /home/nuzhatkhan/biometric-attendance-system/mobile/eas.json: "preview": {
 
 WORKING COMMANDS:
-  git diff --stat HEAD && echo "---" && git diff HEAD -- backend/app/main.py backend/app/routers/employee_portal.py frontend/src/app/corrections/page.js frontend/src/app/employee/attendance/page.js frontend/src/app/employee/payslips/page.js 2>&1 | head -200: Git operation
-  git log --oneline -10 main && echo "--- current branch ---" && git log --oneline -10 HEAD && echo "--- divergence ---" && git merge-base main HEAD && echo "--- commits ahead of main ---" && git log --oneline main..HEAD && echo "--- commits main is ahead ---" && git log --oneline HEAD..main: Git operation
-  git stash && git status: Git operation
-  git checkou
+  git log --oneline --all -- mobile/assets/images/icon.png mobile/assets/images/adaptive-icon.png | head -10: Git operation
+  git show --stat 805a127 | head -20 && echo "---" && git log --oneline 252a51d..HEAD | head -20: Git operation
