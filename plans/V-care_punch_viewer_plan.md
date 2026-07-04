@@ -10,6 +10,61 @@ No payroll. No shifts. No OT. No leaves. No salary. Just punches.
 
 ---
 
+## 0. V-CARE DEVICE DETAILS
+
+Extracted from device photos (July 2026):
+
+### Device Info
+| Field | Value |
+|-------|-------|
+| **Device Name** | x 2008 |
+| **Serial Number** | **`NFZ8250200789`** |
+| **MAC Address** | `00:17:61:10:23:c0` |
+| **Fingerprint Algorithm** | Finger VX10.0 |
+| **Platform** | ZLM60_TFT |
+| **Manufacturer** | 0 (ZKTeco) |
+
+### Firmware Info
+| Service | Version |
+|---------|---------|
+| **Firmware Version** | Ver 8.0.4.3-20230515 |
+| **Push Service** | **Ver 2.0.33S-20220613** ✅ (ADMS push capable) |
+| **Bio Service** | Ver 2.1.12-20170420 |
+| **Standalone Service** | Ver 2.1.6-20220413 |
+| **Dev Service** | Ver 2.0.1-20180929 |
+| **System Version** | Ver 22.5.10-20170306 |
+
+### Device Capacity
+| Resource | Used / Max |
+|----------|-----------|
+| **Users** | 9 / 2,000 |
+| **Fingerprints** | 18 / 2,000 (~2 per employee) |
+| **T&A Records** | 3,134 / 200,000 |
+| **Admin Users** | 0 |
+| **Cards** | 0 / 2,000 |
+| **Passwords** | 1 |
+
+### Connection Method: **PyZK Pull (Relay)** ✅
+
+The device supports BOTH ADMS Push and PyZK Pull, but we'll use **PyZK Pull via relay** because:
+- Hospital has private LAN (no public IP for device to reach Railway directly)
+- PyZK pull is proven reliable in our existing Andheri deployment
+- ADMS push over HTTPS can be buggy on older firmware
+- Relay also acts as ADMS proxy (fallback if device is configured for push mode)
+
+```python
+# vcare_relay.py config values
+DEVICE_SN   = "NFZ8250200789"
+DEVICE_IP   = "192.168.x.x"   # Get from device: Menu > COMM > Ethernet
+DEVICE_PORT = 4370
+RAILWAY_URL = "https://vcare-backend.up.railway.app"
+```
+
+> **9 employees** are already registered on the device with **3,134 existing punch records**.
+> On first relay run, we'll pull records from the current month start.
+
+---
+
 ## 1. DATA FLOW — How Punches Get From the Device to the Doctor's Phone
 
 This is the full pipeline, step by step.
@@ -529,7 +584,7 @@ Simple table. Each employee just has:
 2. Install Python + pyzk: `pip install pyzk requests`
 3. Edit config in the relay:
    ```python
-   DEVICE_SN   = "VCARE_ACTUAL_SN"
+   DEVICE_SN   = "NFZ8250200789"
    DEVICE_IP   = "192.168.x.x"      # Find on device: Menu > COMM > Ethernet
    RAILWAY_URL = "https://vcare-backend.up.railway.app"
    ```
@@ -604,3 +659,93 @@ Simple table. Each employee just has:
 4. Tap employee → verify monthly punch history displays
 5. Select employee + date → verify detailed session view
 6. Pull-to-refresh → verify new punches appear
+
+---
+
+## APPENDIX A: WHY A NEW DATABASE?
+
+Yes, a **completely new Supabase project** is required. Here's why:
+
+| Problem | What Happens If Shared |
+|---------|------------------------|
+| User IDs overlap | Device user ID `5` at your hospital ≠ user ID `5` at V-Care. Shared DB would merge them into one employee |
+| Punch data mixing | V-Care punches would appear in your existing hospital's reports |
+| Admin access | V-Care doctor would see your hospital's employees |
+| Schema changes | A V-Care-specific change could break your existing system |
+
+**New Supabase project = complete data isolation. Zero risk.**
+
+---
+
+## APPENDIX B: CODE REMOVAL — WHAT GETS DELETED vs KEPT
+
+### ❌ Backend Files to REMOVE (delete from V-care branch)
+
+| File | Reason |
+|------|--------|
+| `backend/app/routers/payroll.py` | No salary calculations |
+| `backend/app/routers/payslip.py` | No payslip generation |
+| `backend/app/routers/overrides.py` | No manual corrections |
+| `backend/app/routers/leaves.py` | No leave management |
+| `backend/app/routers/holidays.py` | No holiday calendar |
+| `backend/app/routers/notifications.py` | No push notifications |
+| `backend/app/routers/voice.py` | No voice features |
+| `backend/app/routers/employee_portal.py` | Employees don't use app |
+| `backend/app/workers/payroll_worker.py` | No payroll |
+| `backend/app/workers/override_applicator.py` | No corrections |
+| `backend/app/workers/recalculation.py` | No recalculation |
+| `backend/app/workers/special_attendance.py` | Not needed |
+| `backend/app/schemas/attendance.py` | Replace with simplified schema |
+| `frontend/` (entire folder) | No web dashboard — mobile only |
+
+### ❌ Mobile Tabs to REMOVE
+
+| File | Reason |
+|------|--------|
+| `mobile/app/(tabs)/payroll.tsx` | No payroll |
+| `mobile/app/(tabs)/payslips.tsx` | No payslips |
+| `mobile/app/(tabs)/leaves.tsx` | No leaves |
+| `mobile/app/(tabs)/holidays.tsx` | No holidays |
+| `mobile/app/(tabs)/corrections.tsx` | No corrections |
+| `mobile/app/(tabs)/shifts.tsx` | No shift master |
+| `mobile/app/(tabs)/notifications.tsx` | No notifications |
+| `mobile/app/(tabs)/admin-sync.tsx` | Replaced by relay |
+| `mobile/app/(tabs)/users.tsx` | Merged into settings |
+| `mobile/app/(tabs)/index.tsx` | Replaced by punches tab |
+| `mobile/app/(tabs)/attendance.tsx` | Replaced by punches tab |
+
+### ✅ Backend Files to KEEP
+
+| File | Purpose |
+|------|--------|
+| `backend/app/routers/adms.py` | Receives punches from relay |
+| `backend/app/routers/sync.py` | Manual file sync backup |
+| `backend/app/routers/attendance.py` | Punch log APIs (+ new endpoints) |
+| `backend/app/routers/employees.py` | Employee CRUD |
+| `backend/app/routers/auth.py` | Login |
+| `backend/app/routers/users.py` | Admin management |
+| `backend/app/routers/devices.py` | Device management |
+| `backend/app/workers/session_builder.py` | Pairs IN/OUT (NO changes) |
+| `backend/app/workers/auto_checkout.py` | Auto-close (MODIFY for 4PM/11:59PM) |
+| `backend/app/workers/device_poller.py` | Device heartbeat |
+| `backend/app/main.py` | App entry (MODIFY to remove unused routers) |
+| `backend/app/config.py` | Config (NO changes) |
+| `backend/app/database.py` | DB connection (NO changes) |
+
+### ✅ Mobile Files to KEEP
+
+| File | Purpose |
+|------|--------|
+| `mobile/app/login.tsx` | Doctor login (NO changes) |
+| `mobile/app/_layout.tsx` | Root layout (NO changes) |
+| `mobile/app/(tabs)/_layout.tsx` | Tab layout (MODIFY — 3 tabs only) |
+| `mobile/app/(tabs)/employees.tsx` | Employee list + punch history (MODIFY) |
+| `mobile/services/api.ts` | API service (MODIFY — strip unused calls) |
+
+### ✅ New Files to CREATE
+
+| File | Purpose |
+|------|--------|
+| `vcare_relay.py` | Relay script for V-Care hospital PC |
+| `mobile/app/(tabs)/punches.tsx` | Date-wise punch log (main screen) |
+| `mobile/app/(tabs)/settings.tsx` | Logout + employee CRUD |
