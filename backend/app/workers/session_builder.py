@@ -57,10 +57,9 @@ async def run_session_builder():
                 logger.error(f"Error processing punch {punch['id']}: {e}")
                 errors += 1
 
-        # After all punches processed, run Override Applicator for affected sessions
-        if affected_sessions:
-            from app.workers.override_applicator import apply_overrides_for_sessions
-            await apply_overrides_for_sessions(list(affected_sessions))
+        # After all punches processed, log completion
+        logger.info(f"Session Builder complete: {processed} processed, {errors} errors")
+        return {"processed": processed, "errors": errors}
 
         logger.info(f"Session Builder complete: {processed} processed, {errors} errors")
         return {"processed": processed, "errors": errors}
