@@ -1,8 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// Assuming running locally, you might need to change this to your computer's IP address
-// when testing on a real device.
+// Set up for Railway backend in preview/prod
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.194:8000';
 
 export const api = axios.create({
@@ -30,32 +29,31 @@ export const login = async (username, password) => {
   return response.data;
 };
 
-export const getMyProfile = async () => {
-  const response = await api.get('/api/portal/my-profile');
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PUNCH LOG VIEWER API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const getPunchesByDate = async (date?: string) => {
+  const url = date ? `/api/attendance/punch-log/by-date?date=${date}` : '/api/attendance/punch-log/by-date';
+  const response = await api.get(url);
   return response.data;
 };
 
-// Instead of a dedicated voice attendance endpoint, we use the device sync endpoint or log it
-export const logVoiceInteraction = async (data) => {
-  const response = await api.post('/api/voice/log', data);
+export const getPunchesByEmployee = async (employeeId: string, month: number, year: number) => {
+  const response = await api.get(`/api/attendance/punch-log/by-employee?employee_id=${employeeId}&month=${month}&year=${year}`);
   return response.data;
 };
 
-// Upload DAT file (Admin Sync)
-export const uploadSyncFile = async (uri, name) => {
-  const formData = new FormData();
-  // Provide a minimal file-like object to React Native FormData
-  formData.append('file', {
-    uri,
-    name: name || 'manual_sync.dat',
-    type: 'application/octet-stream',
-  } as any);
-  formData.append('device_sn', 'MANUAL_USB');
+export const getPunchesByEmployeeDate = async (employeeId: string, date: string) => {
+  const response = await api.get(`/api/attendance/punch-log/by-employee-date?employee_id=${employeeId}&date=${date}`);
+  return response.data;
+};
 
-  const response = await api.post('/api/sync/upload-dat', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// EMPLOYEES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const getEmployees = async () => {
+  const response = await api.get('/api/employees/');
   return response.data;
 };

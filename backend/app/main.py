@@ -1,6 +1,8 @@
-"""FastAPI main application — Attendance & Payroll System.
+"""FastAPI main application — V-Care Hospital Punch Viewer.
 
-Assembles all routers and starts background workers via APScheduler.
+Stripped-down version for the V-Care hospital client.
+Only attendance punch viewing, employee management, and device sync.
+No payroll, leaves, holidays, overrides, or notifications.
 """
 
 import logging
@@ -10,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_settings
-from app.routers import employees, attendance, overrides, payroll, devices, payslip, sync, holidays, adms, auth, employee_portal, leaves, users, notifications, voice
+from app.routers import employees, attendance, devices, sync, adms, auth, users
 
 # Configure logging
 logging.basicConfig(
@@ -48,19 +50,11 @@ async def _run_device_poller_job():
     except Exception as e:
         logger.error(f"Device Poller job error: {e}")
 
-async def _run_special_attendance_job():
-    """Scheduled job: Special Attendance Worker (every day at 00:30)."""
-    try:
-        from app.workers.special_attendance import run_special_attendance
-        await run_special_attendance()
-    except Exception as e:
-        logger.error(f"Special Attendance job error: {e}")
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: start/stop background workers."""
-    logger.info("🚀 Starting Attendance & Payroll System")
+    logger.info("🚀 Starting V-Care Punch Viewer System")
 
     # Start scheduled workers
     scheduler.add_job(_run_session_builder_job, "interval", seconds=30, id="session_builder")
@@ -69,11 +63,8 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     scheduler.add_job(_run_device_poller_job, "interval", seconds=settings.device_poll_interval_seconds, id="device_poller")
     
-    # Run special attendance at 12:30 AM every day
-    scheduler.add_job(_run_special_attendance_job, "cron", hour=0, minute=30, id="special_attendance")
-    
     scheduler.start()
-    logger.info(f"⏰ Background workers started (Session Builder: 30s, Auto Checkout: 15m, Device Poller: {settings.device_poll_interval_seconds}s, Special Attendance: 00:30 daily)")
+    logger.info(f"⏰ Background workers started (Session Builder: 30s, Auto Checkout: 15m, Device Poller: {settings.device_poll_interval_seconds}s)")
 
     yield
 
@@ -84,49 +75,33 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Attendance & Payroll System",
+    title="V-Care Punch Viewer",
     description=(
-        "Biometric attendance tracking and payroll system for a small eye hospital. "
-        "Handles eSSL/ZKTeco device integration, session pairing, auto-checkout, "
-        "admin corrections (overrides), recalculation, and payroll computation."
+        "Biometric attendance punch viewer for V-Care Hospital. "
+        "Tracks employee IN/OUT punches from ZKTeco biometric device. "
+        "No payroll, no salary — just punch data for the doctor to review."
     ),
     version="1.0.0",
     lifespan=lifespan,
 )
 
-# CORS — allow frontend
+# CORS — allow mobile app and local dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "https://attendance-sigma-one.vercel.app",
-        "https://novus-comply.vercel.app", # added just in case
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount routers
-app.include_router(adms.router)  # ADMS push protocol — mounted at root (device expects /iclock/cdata)
+# Mount routers — only what V-Care needs
+app.include_router(adms.router)  # ADMS protocol — mounted at root (device expects /iclock/cdata)
 app.include_router(employees.router, prefix="/api")
 app.include_router(attendance.router, prefix="/api")
-app.include_router(overrides.router, prefix="/api")
-app.include_router(payroll.router, prefix="/api")
-app.include_router(payslip.router, prefix="/api")
 app.include_router(devices.router, prefix="/api")
 app.include_router(sync.router, prefix="/api")
-app.include_router(holidays.router, prefix="/api")
 app.include_router(auth.router)
-app.include_router(employee_portal.router)
-app.include_router(leaves.router)
 app.include_router(users.router)
-app.include_router(notifications.router)
-app.include_router(voice.router)
 
 
 # Global exception handler — ensures 500 errors return JSON (and CORS headers)
@@ -145,7 +120,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/")
 async def root():
     return {
-        "system": "Attendance & Payroll System",
+        "system": "V-Care Punch Viewer",
         "version": "1.0.0",
         "status": "running",
         "docs": "/docs",
@@ -158,8 +133,7 @@ async def health_check():
     from app.database import get_supabase
     try:
         db = get_supabase()
-        # Quick DB check
-        db.table("system_config").select("key").limit(1).execute()
+        db.table("employees").select("id").limit(1).execute()
         db_status = "connected"
     except Exception as e:
         db_status = f"error: {e}"
@@ -174,24 +148,3 @@ async def health_check():
             "device_poller": f"active ({get_settings().device_poll_interval_seconds}s interval)",
         },
     }
-
-
-@app.get("/api/system-config")
-async def get_system_config():
-    """Get system configuration."""
-    db = get_supabase()
-    result = db.table("system_config").select("*").execute()
-    return {item["key"]: item["value"] for item in (result.data or [])}
-
-
-@app.put("/api/system-config/{key}")
-async def update_system_config(key: str, value: dict):
-    """Update a system config value."""
-    from app.database import get_supabase
-    db = get_supabase()
-    db.table("system_config").upsert({
-        "key": key,
-        "value": value.get("value"),
-        "updated_at": "now()",
-    }).execute()
-    return {"message": f"Config '{key}' updated"}

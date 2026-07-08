@@ -1,181 +1,328 @@
-"""Attendance API — view sessions, daily attendance, dashboard."""
+"""Attendance API — V-Care Punch Viewer.
 
-from fastapi import APIRouter, Query
-from datetime import date, datetime
-from typing import Optional, List
+Provides punch-log views for the doctor:
+  1. Date-wise: all employees' punches for a given date
+  2. Employee-wise: one employee's punches for a month
+  3. Employee + Date: detailed punches for one employee on one date
+"""
+
+from fastapi import APIRouter, Query, HTTPException
+from datetime import date, datetime, timedelta
+from typing import Optional
 from uuid import UUID
 
 from app.database import get_supabase
-from app.schemas.attendance import AttendanceSessionResponse, AttendanceDashboard
+from app.utils.timezone import to_local
 
 router = APIRouter(tags=["Attendance"])
 
 
-@router.get("/attendance/today")
-async def today_attendance():
-    """Get today's attendance dashboard."""
+def _format_local_time(utc_str: Optional[str], fmt: str = "%I:%M %p") -> Optional[str]:
+    """Convert UTC ISO string to local time formatted string."""
+    if not utc_str:
+        return None
+    try:
+        utc_dt = datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
+        local_dt = to_local(utc_dt)
+        return local_dt.strftime(fmt)
+    except Exception:
+        return utc_str
+
+
+def _format_local_time_full(utc_str: Optional[str]) -> Optional[str]:
+    """Convert UTC ISO string to local time with seconds."""
+    return _format_local_time(utc_str, fmt="%I:%M:%S %p")
+
+
+def _calc_duration(punch_in_str: Optional[str], punch_out_str: Optional[str]) -> str:
+    """Calculate duration between two UTC ISO strings as 'Xh Ym' format."""
+    if not punch_in_str or not punch_out_str:
+        return "—"
+    try:
+        t_in = datetime.fromisoformat(punch_in_str.replace("Z", "+00:00"))
+        t_out = datetime.fromisoformat(punch_out_str.replace("Z", "+00:00"))
+        delta = t_out - t_in
+        total_minutes = int(delta.total_seconds() / 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        return f"{hours}h {minutes:02d}m"
+    except Exception:
+        return "—"
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 1. DATE-WISE PUNCH LOG — All employees for a date
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.get("/attendance/punch-log/by-date")
+async def punch_log_by_date(
+    date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format (defaults to today)"),
+):
+    """Get all employees' punches for a given date."""
     db = get_supabase()
-    today = date.today().isoformat()
+
+    target_date = date if date else __import__('datetime').date.today().isoformat()
 
     # Get all active employees
     employees = db.table("employees") \
-        .select("id, name, shift_id") \
+        .select("id, name, device_user_id") \
         .eq("is_active", True) \
         .order("name") \
         .execute()
 
-    # Get today's sessions
+    # Get all sessions for the target date
     sessions = db.table("attendance_sessions") \
         .select("*") \
-        .eq("session_date", today) \
+        .eq("session_date", target_date) \
+        .order("punch_in_time") \
         .execute()
 
-    # Build per-employee summaries
-    session_by_emp = {}
+    # Group sessions by employee
+    sessions_by_emp = {}
     for s in (sessions.data or []):
         eid = s["employee_id"]
-        if eid not in session_by_emp:
-            session_by_emp[eid] = []
-        session_by_emp[eid].append(s)
+        if eid not in sessions_by_emp:
+            sessions_by_emp[eid] = []
+        sessions_by_emp[eid].append(s)
 
     present = 0
     absent = 0
-    auto_checkout = 0
-    open_sessions = 0
-    employee_views = []
+    employee_list = []
 
     for emp in (employees.data or []):
-        emp_sessions = session_by_emp.get(emp["id"], [])
-        total_hours = sum(float(s.get("net_hours", 0)) for s in emp_sessions)
+        emp_sessions = sessions_by_emp.get(emp["id"], [])
 
         if emp_sessions:
             present += 1
+            # Determine overall status
             statuses = [s["status"] for s in emp_sessions]
-            if "AUTO_CHECKOUT" in statuses:
-                auto_checkout += 1
-                status_summary = "AUTO_CHECKOUT"
-            elif "OPEN" in statuses:
-                open_sessions += 1
-                status_summary = "OPEN"
+            if "OPEN" in statuses:
+                overall_status = "OPEN"
+            elif "AUTO_CHECKOUT" in statuses:
+                overall_status = "AUTO_CHECKOUT"
             else:
-                status_summary = "PRESENT"
+                overall_status = "COMPLETE"
+
+            punches = []
+            for s in emp_sessions:
+                punches.append({
+                    "in": _format_local_time(s.get("punch_in_time")),
+                    "out": _format_local_time(s.get("punch_out_time")),
+                    "hours": float(s.get("net_hours", 0)),
+                    "duration": _calc_duration(s.get("punch_in_time"), s.get("punch_out_time")),
+                    "status": s["status"],
+                })
+
+            total_hours = round(sum(float(s.get("net_hours", 0)) for s in emp_sessions), 2)
         else:
             absent += 1
-            status_summary = "ABSENT"
+            overall_status = "ABSENT"
+            punches = []
+            total_hours = 0
 
-        employee_views.append({
+        employee_list.append({
             "employee_id": emp["id"],
             "employee_name": emp["name"],
-            "session_date": today,
-            "sessions": emp_sessions,
-            "total_hours": round(total_hours, 2),
-            "status_summary": status_summary,
+            "punches": punches,
+            "total_hours": total_hours,
+            "status": overall_status,
         })
 
     return {
-        "date": today,
-        "total_employees": len(employees.data or []),
-        "present": present,
-        "absent": absent,
-        "auto_checkout": auto_checkout,
-        "open_sessions": open_sessions,
-        "employees": employee_views,
+        "date": target_date,
+        "summary": {
+            "total_employees": len(employees.data or []),
+            "present": present,
+            "absent": absent,
+        },
+        "employees": employee_list,
     }
 
 
-@router.get("/attendance/sessions")
-async def list_sessions(
-    employee_id: Optional[UUID] = None,
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
-    status: Optional[str] = None,
-    limit: int = Query(100, le=500),
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 2. EMPLOYEE-WISE PUNCH LOG — One employee, full month
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.get("/attendance/punch-log/by-employee")
+async def punch_log_by_employee(
+    employee_id: UUID = Query(...),
+    month: int = Query(..., ge=1, le=12),
+    year: int = Query(...),
 ):
-    """List attendance sessions with filters."""
-    db = get_supabase()
-    query = db.table("attendance_sessions").select("*, employees(name)")
-
-    if employee_id:
-        query = query.eq("employee_id", str(employee_id))
-    if date_from:
-        query = query.gte("session_date", date_from.isoformat())
-    if date_to:
-        query = query.lte("session_date", date_to.isoformat())
-    if status:
-        query = query.eq("status", status)
-
-    result = query.order("session_date", desc=True).order("punch_in_time", desc=True).limit(limit).execute()
-
-    sessions = []
-    for s in (result.data or []):
-        emp = s.pop("employees", None)
-        s["employee_name"] = emp.get("name") if emp else None
-        sessions.append(s)
-
-    return sessions
-
-
-@router.get("/attendance/employee/{employee_id}/monthly")
-async def employee_monthly_attendance(employee_id: UUID, year: int, month: int):
-    """Get monthly attendance view for an employee."""
+    """Get one employee's punches for an entire month."""
     db = get_supabase()
 
+    # Get employee info
+    emp_result = db.table("employees") \
+        .select("id, name") \
+        .eq("id", str(employee_id)) \
+        .execute()
+
+    if not emp_result.data:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    employee = emp_result.data[0]
+
+    # Calculate date range
     from calendar import monthrange
     _, last_day = monthrange(year, month)
-    period_start = date(year, month, 1).isoformat()
-    period_end = date(year, month, last_day).isoformat()
+    period_start = f"{year}-{month:02d}-01"
+    period_end = f"{year}-{month:02d}-{last_day:02d}"
 
+    # Get sessions
     sessions = db.table("attendance_sessions") \
         .select("*") \
         .eq("employee_id", str(employee_id)) \
         .gte("session_date", period_start) \
         .lte("session_date", period_end) \
         .order("session_date") \
-        .execute()
-
-    # Get overrides for the period
-    overrides = db.table("session_overrides") \
-        .select("*") \
-        .eq("employee_id", str(employee_id)) \
-        .eq("is_active", True) \
-        .gte("session_date", period_start) \
-        .lte("session_date", period_end) \
+        .order("punch_in_time") \
         .execute()
 
     # Group by date
-    from datetime import timedelta
-    daily = {}
-    current = date(year, month, 1)
-    end = date(year, month, last_day)
+    from datetime import date as date_type
+    days = []
+    days_present = 0
+    days_absent = 0
+    total_month_hours = 0.0
 
-    while current <= end:
+    current = date_type(year, month, 1)
+    end_date = date_type(year, month, last_day)
+    today = date_type.today()
+
+    while current <= end_date and current <= today:
         d = current.isoformat()
         day_sessions = [s for s in (sessions.data or []) if s["session_date"] == d]
-        day_override = [o for o in (overrides.data or []) if o["session_date"] == d]
 
-        daily[d] = {
+        if day_sessions:
+            days_present += 1
+            statuses = [s["status"] for s in day_sessions]
+            if "OPEN" in statuses:
+                day_status = "OPEN"
+            elif "AUTO_CHECKOUT" in statuses:
+                day_status = "AUTO_CHECKOUT"
+            else:
+                day_status = "COMPLETE"
+
+            punches = []
+            for s in day_sessions:
+                punches.append({
+                    "in": _format_local_time(s.get("punch_in_time")),
+                    "out": _format_local_time(s.get("punch_out_time")),
+                    "duration": _calc_duration(s.get("punch_in_time"), s.get("punch_out_time")),
+                    "status": s["status"],
+                })
+
+            day_hours = round(sum(float(s.get("net_hours", 0)) for s in day_sessions), 2)
+            total_month_hours += day_hours
+        else:
+            days_absent += 1
+            day_status = "ABSENT"
+            punches = []
+            day_hours = 0
+
+        days.append({
             "date": d,
-            "day_of_week": current.strftime("%A"),
-            "is_weekend": current.weekday() >= 5,
-            "sessions": day_sessions,
-            "total_hours": round(sum(float(s.get("net_hours", 0)) for s in day_sessions), 2),
-            "has_override": len(day_override) > 0,
-            "status": day_sessions[0]["status"] if day_sessions else ("WEEKEND" if current.weekday() >= 5 else "ABSENT"),
-        }
+            "day": current.strftime("%A"),
+            "punches": punches,
+            "total_hours": day_hours,
+            "status": day_status,
+        })
+
         current += timedelta(days=1)
+
+    import calendar
+    month_name = calendar.month_name[month]
 
     return {
         "employee_id": str(employee_id),
-        "year": year,
-        "month": month,
-        "days": daily,
+        "employee_name": employee["name"],
+        "month": f"{month_name} {year}",
+        "days": days,
         "summary": {
-            "total_sessions": len(sessions.data or []),
-            "total_hours": round(sum(float(s.get("net_hours", 0)) for s in (sessions.data or [])), 2),
-            "days_present": len(set(s["session_date"] for s in (sessions.data or []))),
+            "days_present": days_present,
+            "days_absent": days_absent,
+            "total_hours": round(total_month_hours, 2),
         },
     }
 
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 3. EMPLOYEE + DATE — Detailed punches for one employee on one date
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.get("/attendance/punch-log/by-employee-date")
+async def punch_log_by_employee_date(
+    employee_id: UUID = Query(...),
+    date: str = Query(..., description="Date in YYYY-MM-DD format"),
+):
+    """Get detailed punches for one employee on a specific date."""
+    db = get_supabase()
+
+    # Get employee info
+    emp_result = db.table("employees") \
+        .select("id, name") \
+        .eq("id", str(employee_id)) \
+        .execute()
+
+    if not emp_result.data:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    employee = emp_result.data[0]
+
+    # Get sessions for this employee on this date
+    sessions = db.table("attendance_sessions") \
+        .select("*") \
+        .eq("employee_id", str(employee_id)) \
+        .eq("session_date", date) \
+        .order("punch_in_time") \
+        .execute()
+
+    session_list = []
+    total_minutes = 0
+
+    for idx, s in enumerate(sessions.data or [], start=1):
+        punch_in_local = _format_local_time_full(s.get("punch_in_time"))
+        punch_out_local = _format_local_time_full(s.get("punch_out_time"))
+        duration = _calc_duration(s.get("punch_in_time"), s.get("punch_out_time"))
+
+        # Calculate minutes for day total
+        if s.get("punch_in_time") and s.get("punch_out_time"):
+            try:
+                t_in = datetime.fromisoformat(s["punch_in_time"].replace("Z", "+00:00"))
+                t_out = datetime.fromisoformat(s["punch_out_time"].replace("Z", "+00:00"))
+                total_minutes += int((t_out - t_in).total_seconds() / 60)
+            except Exception:
+                pass
+
+        session_list.append({
+            "session_number": idx,
+            "punch_in_local": punch_in_local,
+            "punch_out_local": punch_out_local,
+            "duration": duration,
+            "status": s["status"],
+            "hours": float(s.get("net_hours", 0)),
+        })
+
+    # Format day total
+    if total_minutes > 0:
+        day_total = f"{total_minutes // 60}h {total_minutes % 60:02d}m"
+    else:
+        day_total = "0h 00m"
+
+    return {
+        "employee_id": str(employee_id),
+        "employee_name": employee["name"],
+        "date": date,
+        "sessions": session_list,
+        "day_total": day_total,
+        "total_hours": round(total_minutes / 60, 2) if total_minutes > 0 else 0,
+    }
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# TRIGGER ENDPOINTS (for manual testing)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @router.post("/attendance/trigger-session-builder")
 async def trigger_session_builder():
