@@ -39,7 +39,7 @@ from zk import ZK
 DEVICE_IP = "192.168.0.201"            # V-Care device IP (confirmed on hospital WiFi)
 DEVICE_PORT = 4370                      # ZKTeco default ZK protocol port
 DEVICE_SN = "NFZ8250200789"            # V-Care device serial number
-CLOUD_API_URL = "https://VCARE-BACKEND.up.railway.app/api/sync/upload-dat"  # UPDATE with actual Railway URL
+CLOUD_API_URL = "https://biometric-attendance-system-production.up.railway.app/api/sync/upload-dat"
 POLL_INTERVAL_SECONDS = 60              # Poll every 60 seconds
 # ════════════════════════════════════════
 
