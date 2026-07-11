@@ -17,6 +17,50 @@ from app.utils.timezone import to_local
 router = APIRouter(tags=["Attendance"])
 
 
+def _get_ist_today() -> str:
+    """Get today's date in IST (Asia/Kolkata), regardless of server timezone."""
+    from app.utils.timezone import to_local
+    import pytz
+    now_utc = datetime.now(pytz.utc)
+    now_ist = to_local(now_utc)
+    return now_ist.date().isoformat()
+
+
+def _correct_client_date(client_date: Optional[str]) -> str:
+    """Correct the UTC-shifted date sent by the mobile app.
+
+    The mobile app uses `new Date().toISOString().split('T')[0]` which gives
+    the UTC date, not the local (IST) date. Between 00:00 and 05:30 IST,
+    the UTC date is one day behind the IST date.
+
+    This function detects when the client sends yesterday's UTC date during
+    that window and corrects it to today's IST date. For past dates (user
+    navigating history), no correction is applied since the shift is
+    consistent — both the header display and the API query are off by the
+    same amount, so they still match.
+
+    TODO: Remove this workaround once the mobile app is updated to use
+    local date formatting (getFullYear/getMonth/getDate instead of toISOString).
+    """
+    import pytz
+    from app.utils.timezone import to_local
+
+    now_utc = datetime.now(pytz.utc)
+    now_ist = to_local(now_utc)
+    today_ist = now_ist.date().isoformat()
+    today_utc = now_utc.date().isoformat()
+
+    if not client_date:
+        return today_ist
+
+    # Only correct when UTC date != IST date (between 00:00 and 05:30 IST)
+    # AND the client sent the UTC date (which would be yesterday in IST)
+    if today_utc != today_ist and client_date == today_utc:
+        return today_ist
+
+    return client_date
+
+
 def _format_local_time(utc_str: Optional[str], fmt: str = "%I:%M %p") -> Optional[str]:
     """Convert UTC ISO string to local time formatted string."""
     if not utc_str:
@@ -61,7 +105,7 @@ async def punch_log_by_date(
     """Get all employees' punches for a given date."""
     db = get_supabase()
 
-    target_date = date if date else __import__('datetime').date.today().isoformat()
+    target_date = _correct_client_date(date)
 
     # Get all active employees
     employees = db.table("employees") \
