@@ -45,10 +45,17 @@
       "expo-secure-store",
       "expo-speech-recognition",
       "expo-document-picker",
-      "expo-notifications"
+      "expo-notifications",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "88e12f08-bd5c-4441-ada4-2f7eb95587e2"
+      }
     }
   }
 }
