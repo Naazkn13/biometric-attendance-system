@@ -6,6 +6,7 @@ parsing them using the same logic as the ADMS push endpoint.
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from datetime import datetime
+import traceback
 import logging
 
 from app.database import get_supabase
@@ -33,6 +34,7 @@ async def upload_dat_file(
 
     inserted_count = 0
     error_count = 0
+    error_details = []
     punches_to_insert = []
 
     for line in body_text.split("\n"):
@@ -101,7 +103,10 @@ async def upload_dat_file(
                     punches_to_insert = []
 
         except Exception as e:
-            logger.error(f"Error processing line {line}: {e}")
+            err_msg = f"Line '{line[:80]}': {type(e).__name__}: {e}"
+            logger.error(f"Error processing: {err_msg}")
+            logger.error(traceback.format_exc())
+            error_details.append(err_msg)
             error_count += 1
             continue
             
@@ -132,5 +137,6 @@ async def upload_dat_file(
     return {
         "inserted": inserted_count,
         "errors": error_count,
+        "error_details": error_details[:10],
         "message": f"Successfully processed {inserted_count} punches."
     }

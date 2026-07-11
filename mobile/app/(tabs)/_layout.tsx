@@ -23,7 +23,7 @@ export default function TabLayout() {
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen
-        name="punches"
+        name="index"
         options={{
           title: 'Punches',
           tabBarIcon: ({ color }) => <TabBarIcon name="calendar-check-o" color={color} />,
