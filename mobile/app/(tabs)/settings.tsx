@@ -22,7 +22,7 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             await SecureStore.deleteItemAsync('token');
-            router.replace('/');
+            router.replace('/login');
           }
         }
       ]

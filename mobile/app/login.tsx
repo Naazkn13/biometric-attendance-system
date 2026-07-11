@@ -20,12 +20,17 @@ export default function LoginScreen() {
       const data = await login(username, password);
       await SecureStore.setItemAsync('token', data.access_token);
       
-      const profile = await getMyProfile();
-      await SecureStore.setItemAsync('userRole', profile.role);
+      try {
+        const profile = await getMyProfile();
+        await SecureStore.setItemAsync('userRole', profile.role || 'ADMIN');
+      } catch (profileErr) {
+        // Profile fetch failed but login succeeded — still proceed
+        await SecureStore.setItemAsync('userRole', 'ADMIN');
+      }
       
       router.replace('/(tabs)');
-    } catch (error) {
-      Alert.alert('Login Failed', error.response?.data?.detail || error.message);
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.response?.data?.detail || error.message || 'Check your credentials');
     } finally {
       setLoading(false);
     }
@@ -35,7 +40,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.title}>AttendPay</Text>
+          <Text style={styles.title}>V-Care</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
 

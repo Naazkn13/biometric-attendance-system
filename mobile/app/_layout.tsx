@@ -1,9 +1,10 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -47,11 +48,41 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
+  const segments = useSegments();
+  const [isReady, setIsReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check auth state on mount and when segments change
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await SecureStore.getItemAsync('token');
+      setIsAuthenticated(!!token);
+      setIsReady(true);
+    };
+    checkAuth();
+  }, [segments]);
+
+  // Redirect based on auth state
+  useEffect(() => {
+    if (!isReady) return;
+
+    const inAuthGroup = segments[0] === '(tabs)';
+
+    if (!isAuthenticated && inAuthGroup) {
+      // Not logged in, redirect to login
+      router.replace('/login');
+    } else if (isAuthenticated && segments[0] === 'login') {
+      // Logged in, redirect to tabs
+      router.replace('/(tabs)');
+    }
+  }, [isReady, isAuthenticated, segments]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

@@ -19,13 +19,17 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-export const login = async (username, password) => {
-  const formData = new FormData();
-  formData.append('username', username);
-  formData.append('password', password);
-  const response = await api.post('/auth/token', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AUTH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const login = async (username: string, password: string) => {
+  const response = await api.post('/api/auth/login', { username, password });
+  return response.data;
+};
+
+export const getMyProfile = async () => {
+  const response = await api.get('/api/auth/me');
   return response.data;
 };
 
@@ -54,6 +58,6 @@ export const getPunchesByEmployeeDate = async (employeeId: string, date: string)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const getEmployees = async () => {
-  const response = await api.get('/api/employees/');
+  const response = await api.get('/api/employees');
   return response.data;
 };

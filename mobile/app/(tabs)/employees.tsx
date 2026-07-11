@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
-import { getEmployees, getPunchesByEmployee, getPunchesByEmployeeDate } from '@/services/api';
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, Modal, ScrollView } from 'react-native';
+import { getEmployees, getPunchesByEmployee } from '@/services/api';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function EmployeesScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -19,11 +21,13 @@ export default function EmployeesScreen() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [historyData, setHistoryData] = useState<any>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   
-  // Date picker state
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [singleDateData, setSingleDateData] = useState<any>(null);
+  // Month picker state
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1); // 1-12
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   // Load employee list
   const loadEmployees = async (isRefresh = false) => {
@@ -47,42 +51,100 @@ export default function EmployeesScreen() {
   }, []);
 
   // Load employee history (monthly)
-  const loadHistory = async (emp: any) => {
+  const loadHistory = async (emp: any, month?: number, year?: number) => {
     setSelectedEmployee(emp);
     setHistoryLoading(true);
-    setSingleDateData(null);
-    setSelectedDate(null);
+    setHistoryError(null);
+    const m = month || selectedMonth;
+    const y = year || selectedYear;
     try {
-      const now = new Date();
-      const data = await getPunchesByEmployee(emp.id, now.getMonth() + 1, now.getFullYear());
+      const data = await getPunchesByEmployee(emp.id, m, y);
       setHistoryData(data);
     } catch (err: any) {
-      console.error(err);
+      setHistoryError(err.message || 'Failed to load history');
+      setHistoryData(null);
     }
     setHistoryLoading(false);
   };
 
-  // Load single date details
-  const loadSingleDate = async (date: Date) => {
-    setSelectedDate(date);
-    setShowDatePicker(false);
-    setHistoryLoading(true);
-    try {
-      const dateStr = date.toISOString().split('T')[0];
-      const data = await getPunchesByEmployeeDate(selectedEmployee.id, dateStr);
-      setSingleDateData(data);
-    } catch (err: any) {
-      console.error(err);
+  // Change month
+  const changeMonth = (month: number, year: number) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setShowMonthPicker(false);
+    if (selectedEmployee) {
+      loadHistory(selectedEmployee, month, year);
     }
-    setHistoryLoading(false);
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      loadSingleDate(selectedDate);
-    }
+  // Navigate months with arrows
+  const navigateMonth = (delta: number) => {
+    let newMonth = selectedMonth + delta;
+    let newYear = selectedYear;
+    if (newMonth > 12) { newMonth = 1; newYear++; }
+    if (newMonth < 1) { newMonth = 12; newYear--; }
+    changeMonth(newMonth, newYear);
   };
+
+  // Check if we can go forward (don't go past current month)
+  const canGoForward = selectedYear < now.getFullYear() || (selectedYear === now.getFullYear() && selectedMonth < now.getMonth() + 1);
+
+  // Month Picker Modal
+  const renderMonthPicker = () => (
+    <Modal visible={showMonthPicker} transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#fff' }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Month</Text>
+            <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
+              <FontAwesome name="times" size={22} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Year selector */}
+          <View style={styles.yearRow}>
+            <TouchableOpacity onPress={() => setSelectedYear(y => y - 1)} style={styles.yearBtn}>
+              <FontAwesome name="chevron-left" size={16} color={colors.tint} />
+            </TouchableOpacity>
+            <Text style={[styles.yearText, { color: colors.text }]}>{selectedYear}</Text>
+            <TouchableOpacity 
+              onPress={() => { if (selectedYear < now.getFullYear()) setSelectedYear(y => y + 1); }} 
+              style={styles.yearBtn}
+              disabled={selectedYear >= now.getFullYear()}
+            >
+              <FontAwesome name="chevron-right" size={16} color={selectedYear >= now.getFullYear() ? 'gray' : colors.tint} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Month grid */}
+          <View style={styles.monthGrid}>
+            {SHORT_MONTHS.map((name, idx) => {
+              const m = idx + 1;
+              const isFuture = selectedYear === now.getFullYear() && m > now.getMonth() + 1;
+              const isSelected = m === selectedMonth && selectedYear === selectedYear;
+              return (
+                <TouchableOpacity
+                  key={m}
+                  style={[
+                    styles.monthCell,
+                    isSelected && { backgroundColor: colors.tint },
+                    isFuture && { opacity: 0.3 },
+                  ]}
+                  disabled={isFuture}
+                  onPress={() => changeMonth(m, selectedYear)}
+                >
+                  <Text style={[
+                    styles.monthCellText,
+                    { color: isSelected ? '#fff' : colors.text },
+                  ]}>{name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   // -------------------------------------------------------------
   // RENDER: LIST VIEW
@@ -128,83 +190,66 @@ export default function EmployeesScreen() {
   }
 
   // -------------------------------------------------------------
-  // RENDER: DRILL-DOWN VIEW (History)
+  // RENDER: DRILL-DOWN VIEW (History with Month Picker)
   // -------------------------------------------------------------
   return (
     <View style={styles.container}>
+      {renderMonthPicker()}
+
       <View style={[styles.header, { backgroundColor: colorScheme === 'dark' ? '#111827' : '#f3f4f6', justifyContent: 'flex-start' }]}>
-        <TouchableOpacity onPress={() => setSelectedEmployee(null)} style={{ padding: 10, marginRight: 10 }}>
+        <TouchableOpacity onPress={() => { setSelectedEmployee(null); setHistoryData(null); setHistoryError(null); }} style={{ padding: 10, marginRight: 10 }}>
           <FontAwesome name="arrow-left" size={20} color={colors.tint} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{selectedEmployee.name}'s History</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{selectedEmployee.name}</Text>
       </View>
 
-      <View style={{ padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <TouchableOpacity 
-          style={[styles.datePickerBtn, { borderColor: colors.tint }]}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <FontAwesome name="calendar" size={16} color={colors.tint} style={{ marginRight: 8 }} />
-          <Text style={{ color: colors.tint, fontWeight: '500' }}>
-            {selectedDate ? selectedDate.toLocaleDateString() : 'Pick a specific date...'}
-          </Text>
+      {/* Month Navigation Bar */}
+      <View style={[styles.monthNav, { backgroundColor: colorScheme === 'dark' ? '#111827' : '#e5e7eb' }]}>
+        <TouchableOpacity onPress={() => navigateMonth(-1)} style={styles.navBtn}>
+          <FontAwesome name="chevron-left" size={18} color={colors.tint} />
         </TouchableOpacity>
-        {selectedDate && (
-          <TouchableOpacity onPress={() => { setSelectedDate(null); setSingleDateData(null); }} style={{ padding: 5 }}>
-            <FontAwesome name="times-circle" size={20} color="red" />
-          </TouchableOpacity>
-        )}
-      </View>
+        
+        <TouchableOpacity onPress={() => setShowMonthPicker(true)} style={styles.monthDisplay}>
+          <FontAwesome name="calendar" size={16} color={colors.tint} style={{ marginRight: 8 }} />
+          <Text style={[styles.monthDisplayText, { color: colors.text }]}>
+            {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+          </Text>
+          <FontAwesome name="caret-down" size={14} color={colors.tint} style={{ marginLeft: 6 }} />
+        </TouchableOpacity>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate || new Date()}
-          mode="date"
-          display="default"
-          onChange={onDateChange}
-          maximumDate={new Date()}
-        />
-      )}
+        <TouchableOpacity onPress={() => navigateMonth(1)} style={styles.navBtn} disabled={!canGoForward}>
+          <FontAwesome name="chevron-right" size={18} color={canGoForward ? colors.tint : 'gray'} />
+        </TouchableOpacity>
+      </View>
 
       {historyLoading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={colors.tint} /></View>
-      ) : singleDateData ? (
-        // RENDER SINGLE DATE DETAILED VIEW
-        <View style={styles.singleDateContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Detailed Sessions: {singleDateData.date}</Text>
-          {singleDateData.sessions.length === 0 ? (
-            <Text style={{ color: colors.text, opacity: 0.5, marginTop: 20, textAlign: 'center' }}>No punches on this date.</Text>
-          ) : (
-            singleDateData.sessions.map((s: any) => (
-              <View key={s.session_number} style={[styles.detailSessionCard, { backgroundColor: colorScheme === 'dark' ? '#374151' : '#f9fafb' }]}>
-                <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 10 }}>Session {s.session_number}</Text>
-                <View style={styles.detailRow}><Text style={{ color: colors.text, opacity: 0.7 }}>IN:</Text><Text style={{ color: colors.text, fontWeight: '500' }}>{s.punch_in_local}</Text></View>
-                <View style={styles.detailRow}><Text style={{ color: colors.text, opacity: 0.7 }}>OUT:</Text><Text style={{ color: colors.text, fontWeight: '500' }}>{s.punch_out_local || '—'}</Text></View>
-                <View style={styles.detailRow}><Text style={{ color: colors.text, opacity: 0.7 }}>Duration:</Text><Text style={{ color: colors.text, fontWeight: '500' }}>{s.duration}</Text></View>
-              </View>
-            ))
-          )}
-          {singleDateData.sessions.length > 0 && (
-            <View style={styles.dayTotalBox}>
-              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Day Total: {singleDateData.day_total}</Text>
-            </View>
-          )}
+      ) : historyError ? (
+        <View style={styles.center}>
+          <Text style={{ color: 'red', textAlign: 'center' }}>{historyError}</Text>
+          <TouchableOpacity onPress={() => loadHistory(selectedEmployee)} style={{ marginTop: 15 }}>
+            <Text style={{ color: colors.tint }}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       ) : historyData ? (
-        // RENDER MONTHLY LIST VIEW
         <>
+          {/* Summary Banner */}
           <View style={styles.summaryBanner}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>{historyData.month}</Text>
-            <Text style={{ color: 'white' }}>Present: {historyData.summary.days_present}  |  Absent: {historyData.summary.days_absent}</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>{historyData.month || `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`}</Text>
+            <Text style={{ color: 'white' }}>
+              Present: {historyData.summary?.days_present ?? 0}  |  Absent: {historyData.summary?.days_absent ?? 0}
+            </Text>
           </View>
           <FlatList
-            data={historyData.days.filter((d: any) => d.status !== 'ABSENT')} // only show days they came in
+            data={(historyData.days || []).filter((d: any) => d.status !== 'ABSENT')}
             keyExtractor={(item) => item.date}
             contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
               <View style={[styles.historyCard, { backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#fff' }]}>
                 <View style={styles.historyCardHeader}>
-                  <Text style={[styles.historyDate, { color: colors.text }]}>{new Date(item.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
+                  <Text style={[styles.historyDate, { color: colors.text }]}>
+                    {new Date(item.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </Text>
                   <Text style={{ color: colors.text, fontWeight: 'bold' }}>{item.total_hours} hrs</Text>
                 </View>
                 {item.punches.map((p: any, idx: number) => (
@@ -215,7 +260,11 @@ export default function EmployeesScreen() {
                 ))}
               </View>
             )}
-            ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 50, color: colors.text, opacity: 0.5 }}>No attendance data for this month.</Text>}
+            ListEmptyComponent={
+              <Text style={{ textAlign: 'center', marginTop: 50, color: colors.text, opacity: 0.5 }}>
+                No attendance data for {MONTH_NAMES[selectedMonth - 1]} {selectedYear}.
+              </Text>
+            }
           />
         </>
       ) : null}
@@ -225,7 +274,7 @@ export default function EmployeesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -251,20 +300,74 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   empName: { fontSize: 16, fontWeight: 'bold' },
+  
+  // Month Navigation
+  monthNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+  },
+  navBtn: { padding: 10 },
+  monthDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  monthDisplayText: { fontSize: 16, fontWeight: 'bold' },
+
+  // Month Picker Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold' },
+  yearRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 30,
+  },
+  yearBtn: { padding: 10 },
+  yearText: { fontSize: 22, fontWeight: 'bold' },
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  monthCell: {
+    width: '30%',
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  monthCellText: { fontSize: 15, fontWeight: '600' },
+
+  // Summary & History
   summaryBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: '#3b82f6',
     padding: 12,
     paddingHorizontal: 20,
-  },
-  datePickerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 8,
-    flex: 1,
   },
   historyCard: {
     borderRadius: 8,
@@ -287,25 +390,4 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  singleDateContainer: { padding: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
-  detailSessionCard: {
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(150,150,150,0.2)',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  dayTotalBox: {
-    backgroundColor: '#10b981',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: 'center',
-  }
 });
