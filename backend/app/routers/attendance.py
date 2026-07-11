@@ -33,11 +33,10 @@ def _correct_client_date(client_date: Optional[str]) -> str:
     the UTC date, not the local (IST) date. Between 00:00 and 05:30 IST,
     the UTC date is one day behind the IST date.
 
-    This function detects when the client sends yesterday's UTC date during
-    that window and corrects it to today's IST date. For past dates (user
-    navigating history), no correction is applied since the shift is
-    consistent — both the header display and the API query are off by the
-    same amount, so they still match.
+    During this window, toISOString() shifts ALL dates back by 1 day — not
+    just today. When the user navigates to "July 11", the Date object is
+    July 11 at ~3 AM IST, which toISOString() converts to July 10 ~9:30 PM
+    UTC, extracting "2026-07-10". So ALL dates need +1 day correction.
 
     TODO: Remove this workaround once the mobile app is updated to use
     local date formatting (getFullYear/getMonth/getDate instead of toISOString).
@@ -53,10 +52,15 @@ def _correct_client_date(client_date: Optional[str]) -> str:
     if not client_date:
         return today_ist
 
-    # Only correct when UTC date != IST date (between 00:00 and 05:30 IST)
-    # AND the client sent the UTC date (which would be yesterday in IST)
-    if today_utc != today_ist and client_date == today_utc:
-        return today_ist
+    # When UTC and IST dates differ (00:00–05:30 IST window),
+    # the mobile app shifts ALL dates back by 1 day via toISOString().
+    # Correct by adding 1 day to any date received during this window.
+    if today_utc != today_ist:
+        try:
+            corrected = date.fromisoformat(client_date) + timedelta(days=1)
+            return corrected.isoformat()
+        except (ValueError, TypeError):
+            return today_ist
 
     return client_date
 
