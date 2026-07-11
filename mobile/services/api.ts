@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Set up for Railway backend in preview/prod
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.194:8000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://biometric-attendance-system-production.up.railway.app';
 
 export const api = axios.create({
   baseURL: API_URL,
