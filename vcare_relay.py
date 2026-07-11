@@ -83,7 +83,12 @@ def sync_data(device_ip):
 
         # Build ATTLOG lines
         lines = []
+        now = datetime.now()
         for att in attendances:
+            # Filter for last 60 days (approx 2 months)
+            if (now - att.timestamp).days > 60:
+                continue
+                
             dt_str = att.timestamp.strftime('%Y-%m-%d %H:%M:%S')
             lines.append(f"{att.user_id}\t{dt_str}\t{att.status}\t{att.punch}")
 

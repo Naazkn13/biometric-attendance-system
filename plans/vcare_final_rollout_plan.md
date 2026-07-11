@@ -9,6 +9,7 @@ Follow these steps in exact order to ensure a smooth delivery:
 Before the mobile app is useful, it needs real data from the biometric device. 
 
 1. **Set up the Relay**: Go to the hospital (or have someone there do it) and follow the steps we outlined earlier to install Python on the hospital's PC.
+   - **CRITICAL NOTE FOR OLDER PCs**: If the hospital PC is running an older OS like Windows 7 or Windows 8, you MUST install **Python version 3.8** (e.g., Python 3.8.10). Newer versions of Python (3.9+) are not supported on older Windows operating systems. Ensure "Add python to PATH" is checked during installation.
 2. **Run the Relay**: Start the `vcare_relay.py` script on the PC.
 3. **Verify Data in Cloud**: 
    - Open your Supabase Dashboard (`kiwugfqlwjpperpbbfdx`).
